@@ -1,0 +1,13 @@
+// Breadcrumbs: make truncated subject respect "Base /" width (fill remaining space only)
+// In flexbox, items have min-width: auto by default, so the subject never shrinks.
+// min-width: 0 + flex: 1 lets it take only the remaining space and truncate there.
+
+.breadcrumbs {
+  flex-wrap: nowrap; // keep "Base /" and subject on one line
+}
+
+.breadcrumbs [wfu-truncate],
+.breadcrumbs_subject[wfu-truncate] {
+  min-width: 0; // allow flex item to shrink below content size
+  flex: 1; // take remaining space after "Base /"
+}

@@ -19,6 +19,7 @@ import parallax from './features/parallax';
 import microInteractions from './features/micro-interactions';
 import faq from './features/faq';
 import utilities from './features/utilities';
+import sliders from './features/sliders';
 
 
 // ============================================
@@ -49,6 +50,7 @@ function runApp() {
     ACTIVE_FEATURES.microInteractions && microInteractions();
     ACTIVE_FEATURES.faq && faq();
     ACTIVE_FEATURES.utilities && utilities();
+    ACTIVE_FEATURES.sliders && sliders();
   }
 
   if (document.readyState === 'loading') {

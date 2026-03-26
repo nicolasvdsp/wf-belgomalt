@@ -21,6 +21,7 @@ export const INCLUDE_FEATURES = {
   faq: true,
   vimeoAdvanced: true,
   utilities: true,
+  sliders: true,
   // Add more features as you create them:
   // cursor: false,
   // etc.

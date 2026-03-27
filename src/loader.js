@@ -9,7 +9,7 @@
  * Usage: <script src="main.min.js" dev-mode></script>
  */
 
-const DEV_PORT = 3011;
+const DEV_PORT = 3013;
 const DEV_MESSAGE = "🚧 Dev Mode activated";
 const LIVE_MESSAGE = "🛸 Hi there explorer! You have stumbeled upon the mothership. Lookinging for secretes?";
 

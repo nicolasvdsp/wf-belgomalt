@@ -8,7 +8,7 @@ export const INCLUDE_FEATURES = {
   scrollBehaviour: true,
 
   pageTransitions: true,
-  navbar: true,
+  navbar: false,
   customFeature: true,
   breakpoints: true,
   glossary: true,

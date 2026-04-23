@@ -19,6 +19,7 @@ import microInteractions from './features/micro-interactions';
 import faq from './features/faq';
 import utilities from './features/utilities';
 import sliders from './features/sliders';
+import drawSvg from './features/draw-svg/draw-svg';
 
 
 // ============================================
@@ -31,7 +32,6 @@ detectAndRun(runApp);
 // ============================================
 function runApp() {
   const ACTIVE_FEATURES = getFeaturesFromScriptTag();
-  console.log("hello");
 
   function initFeatures() {
     ACTIVE_FEATURES.pageTransitions && pageTransitions();
@@ -50,6 +50,7 @@ function runApp() {
     ACTIVE_FEATURES.faq && faq();
     ACTIVE_FEATURES.utilities && utilities();
     ACTIVE_FEATURES.sliders && sliders();
+    ACTIVE_FEATURES.drawSvg && drawSvg();
   }
 
   if (document.readyState === 'loading') {

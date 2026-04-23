@@ -1,0 +1,52 @@
+@use '../abstracts' as *;
+
+[data-draw-underline-word],
+[data-draw-underline-block],
+[data-draw-arrow] {
+  position: relative;
+}
+
+.draw-svg__target {
+  display: inline;
+  color: inherit;
+}
+
+.draw-svg__overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.draw-svg__box {
+  position: absolute;
+  pointer-events: none;
+  color: currentColor;
+
+  svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+    overflow: visible !important;
+  }
+}
+
+// Word underline: thin strip right under the matched word.
+// Line scales nicely with font-size (rect width + em height).
+.draw-svg__box--underline-word {
+  height: 0.35em;
+  transform: translateY(-0.08em);
+}
+
+// Block underline: wider strip (block width is much larger than a word's, so
+// we give the SVG more vertical room to avoid the stretched / squished look).
+// Small positive translateY pushes the line down for breathing room under
+// the text block (the word-underline does the opposite — overlaps slightly).
+.draw-svg__box--underline-block {
+  height: 0.8em;
+  transform: translateY(0.2em);
+}
+
+// Arrow: fills the container (user controls container size via CSS).
+.draw-svg__box--arrow {
+  // Inset positioning set inline by JS (left/top/right/bottom = 0).
+}

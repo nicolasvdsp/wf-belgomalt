@@ -152,7 +152,7 @@ function initPageTransitions() {
         duration: config.duration,
         stagger: config.stagger,
         ease: 'expo.out'
-      }, position + "+=" + (i * 0.1));
+      }, position + "+=" + (i * .5));
     });
   }
 
@@ -389,6 +389,209 @@ function initPageTransitions() {
 
     loadTimeline.call(() => {
       resetPage(next)
+    }, null, 0);
+
+    return loadTimeline;
+  }
+
+  function runCoinPreloader(next) {
+    // -----------VARIABLES--------------
+    const wrap = document.querySelector("[data-preloader-wrap]");
+    if (!wrap) return;
+
+    const bg = wrap.querySelector("[data-preloader-bg]");
+    const content = wrap.querySelector("[data-preloader-content]");
+    const coinTemplate = wrap.querySelector("[data-preloader-maltcoin]");
+    const counter =
+      next.querySelector("[data-preloader-counter]") ||
+      document.querySelector("[data-preloader-counter]");
+
+    if (!counter || !coinTemplate) return;
+    counter.classList.add("z-99999");
+
+    // Resolve the text-bearing child inside the counter (preserve icon sibling)
+    const counterValueEl =
+      counter.querySelector("[data-preloader-counter-value]") ||
+      Array.from(counter.children).find(
+        (c) => c.tagName !== "SVG" && !c.querySelector("svg")
+      ) ||
+      counter;
+
+    const resetTargets = Array.from(
+      wrap.querySelectorAll('[data-load-reset]:not([data-load-text])')
+    );
+
+    // Hide template coin immediately (before wrap is shown)
+    gsap.set(coinTemplate, { autoAlpha: 0 });
+
+    // Capture counter's natural position in section_top-bar
+    counter.offsetHeight;
+    const naturalRect = counter.getBoundingClientRect();
+
+    // Calculate center in pixels so the move animation is a clean straight line
+    const centerX = (window.innerWidth - naturalRect.width) / 2;
+    const centerY = (window.innerHeight - naturalRect.height) / 2;
+
+    // Clone the maltcoin template to create falling badges
+    const COIN_COUNT = 28;
+    const coins = [];
+    for (let i = 0; i < COIN_COUNT; i++) {
+      const clone = coinTemplate.cloneNode(true);
+      clone.removeAttribute("data-preloader-maltcoin");
+      content.appendChild(clone);
+      coins.push(clone);
+    }
+
+    // Position each coin off-screen at a random horizontal position (all px)
+    const vw = window.innerWidth;
+    coins.forEach((coin) => {
+      gsap.set(coin, {
+        position: "fixed",
+        left: gsap.utils.random(0.05, 0.95) * vw,
+        top: gsap.utils.random(-100, -50),
+        xPercent: -50,
+        yPercent: -50,
+        opacity: 0,
+        visibility: "hidden",
+        scale: gsap.utils.random(0.6, 1.2),
+        rotation: gsap.utils.random(-25, 25),
+        pointerEvents: "none",
+        zIndex: 9999,
+      });
+    });
+
+    // Position counter at viewport center using pixels (not % + xPercent)
+    gsap.set(counter, {
+      position: "fixed",
+      left: centerX,
+      top: centerY,
+      zIndex: 10000,
+    });
+    counterValueEl.textContent = "0";
+    // ------------var_end---------------
+    // -----------TIMELINE---------------
+
+    const loadTimeline = gsap.timeline({
+      defaults: { ease: "osmo" },
+    }).set(wrap, { display: "block" });
+
+    if (resetTargets.length) {
+      loadTimeline.set(resetTargets, { autoAlpha: 1 }, 0);
+    }
+
+    // --- PHASE 1: Count 0→50 + falling coin badges ---
+    loadTimeline.add("counting", 0.3);
+
+    loadTimeline.to(
+      { val: 0 },
+      {
+        val: 50,
+        duration: 2.5,
+        ease: "power2.out",
+        onUpdate() {
+          counterValueEl.textContent = Math.round(this.targets()[0].val);
+        },
+      },
+      "counting"
+    );
+
+    // Staggered coin rain — each coin arrives at the counter center on a curved path.
+    // Timing is based on ARRIVAL: last coin lands when counter reaches 50.
+    const countingDuration = 2.5;
+    const coinTargetX = centerX + naturalRect.width / 2;
+    const coinTargetY = centerY + naturalRect.height / 2;
+
+    coins.forEach((coin, i) => {
+      const t = i / (COIN_COUNT - 1);
+      const arrivalTime = gsap.utils.interpolate(0.4, countingDuration, t);
+      const flightTime = gsap.utils.random(1.0, 1.6);
+      const startTime = Math.max(0, arrivalTime - flightTime);
+      const duration = arrivalTime - startTime;
+
+      loadTimeline.set(
+        coin,
+        { display: "flex", visibility: "visible", opacity: 1 },
+        `counting+=${startTime}`
+      );
+
+      // Horizontal: smooth S-curve towards counter center
+      loadTimeline.to(
+        coin,
+        { left: coinTargetX, duration, ease: "sine.inOut" },
+        `counting+=${startTime}`
+      );
+
+      // Vertical: gravity-like drop into counter
+      loadTimeline.to(
+        coin,
+        { top: coinTargetY, duration, ease: "power2.in" },
+        `counting+=${startTime}`
+      );
+
+      // Scale + rotation: shrink as it reaches
+      loadTimeline.to(
+        coin,
+        {
+          scale: 0,
+          rotation: `+=${gsap.utils.random(-60, 60)}`,
+          duration,
+          ease: "power3.in",
+        },
+        `counting+=${startTime}`
+      );
+    });
+
+    // --- PHASE 2: Counter slides to its natural position (top-right) ---
+    loadTimeline.add("moveCounter", "counting+=2.7");
+
+    loadTimeline.call(() => {
+      const ghost = counter.cloneNode(true);
+      ghost.style.cssText = "";
+      ghost.style.visibility = "hidden";
+      ghost.style.pointerEvents = "none";
+      counter.parentNode.insertBefore(ghost, counter);
+      ghost.offsetHeight;
+      const destRect = ghost.getBoundingClientRect();
+      ghost.remove();
+
+      gsap.to(counter, {
+        left: destRect.left,
+        top: destRect.top,
+        duration: 0.8,
+        ease: "osmo",
+      });
+    }, null, "moveCounter");
+
+    // --- PHASE 3: Fade out preloader ---
+    loadTimeline.add("hideContent", "moveCounter+=0.6");
+
+    loadTimeline.call(
+      () => {
+        coins.forEach((c) => c.remove());
+        gsap.set(coinTemplate, { clearProps: "autoAlpha" });
+      },
+      null,
+      "hideContent"
+    );
+
+    loadTimeline.to(bg, { autoAlpha: 0, duration: 0.5 }, "hideContent");
+    loadTimeline.to(content, { autoAlpha: 0, duration: 0.5 }, "hideContent");
+    loadTimeline.set(wrap, { display: "none" });
+    loadTimeline.call(() => {
+      gsap.set(counter, {
+        clearProps: "position,left,top,zIndex,transform",
+      });
+    });
+
+    loadTimeline.call(() => dispatchPageVisible(next), null, "hideContent");
+    addSectionReveal(loadTimeline, next, "hideContent-=.05");
+    addTextReveals(loadTimeline, next, "hideContent+=0.3");
+    addElementReveals(loadTimeline, next, "hideContent+=0.6");
+
+    // ------------tl_end----------------
+
+    loadTimeline.call(() => {
+      resetPage(next);
     }, null, 0);
 
     return loadTimeline;
@@ -781,7 +984,7 @@ function initPageTransitions() {
         async once(data) {
           initOnceFunctions();
 
-          return runLogoPreloaderFast(data.next.container);
+          return runCoinPreloader(data.next.container);
         },
 
         // Current page leaves
@@ -803,7 +1006,7 @@ function initPageTransitions() {
         async once(data) {
           initOnceFunctions();
 
-          return runLogoPreloaderFast(data.next.container);
+          return runCoinPreloader(data.next.container);
         },
 
         // Current page leaves
@@ -825,7 +1028,7 @@ function initPageTransitions() {
         async once(data) {
           initOnceFunctions();
 
-          return runLogoPreloaderFast(data.next.container);
+          return runCoinPreloader(data.next.container);
         },
 
         // Current page leaves

@@ -424,9 +424,20 @@ function initPageTransitions() {
     // Hide template coin immediately (before wrap is shown)
     gsap.set(coinTemplate, { autoAlpha: 0 });
 
-    // Capture counter's natural position in section_top-bar
+    // Capture counter's natural size/position BEFORE detaching
     counter.offsetHeight;
     const naturalRect = counter.getBoundingClientRect();
+
+    // The top-bar (position:sticky + z-index) creates a stacking context that
+    // clamps the counter's z-index below the preloader. Detach the counter and
+    // move it to <body> so it escapes the stacking context entirely. A sized
+    // placeholder keeps the top-bar's flex slot intact so layout doesn't shift.
+    const placeholder = document.createElement("div");
+    placeholder.style.width = naturalRect.width + "px";
+    placeholder.style.height = naturalRect.height + "px";
+    placeholder.style.flex = "0 0 auto";
+    counter.parentNode.insertBefore(placeholder, counter);
+    document.body.appendChild(counter);
 
     // Calculate center in pixels so the move animation is a clean straight line
     const centerX = (window.innerWidth - naturalRect.width) / 2;
@@ -545,14 +556,11 @@ function initPageTransitions() {
     loadTimeline.add("moveCounter", "counting+=2.7");
 
     loadTimeline.call(() => {
-      const ghost = counter.cloneNode(true);
-      ghost.style.cssText = "";
-      ghost.style.visibility = "hidden";
-      ghost.style.pointerEvents = "none";
-      counter.parentNode.insertBefore(ghost, counter);
-      ghost.offsetHeight;
-      const destRect = ghost.getBoundingClientRect();
-      ghost.remove();
+      // Measure the placeholder's live position — it sits in the top-bar's
+      // flex slot and reflects where the counter will return to.
+      const destRect = placeholder
+        ? placeholder.getBoundingClientRect()
+        : naturalRect;
 
       gsap.to(counter, {
         left: destRect.left,
@@ -578,6 +586,10 @@ function initPageTransitions() {
     loadTimeline.to(content, { autoAlpha: 0, duration: 0.5 }, "hideContent");
     loadTimeline.set(wrap, { display: "none" });
     loadTimeline.call(() => {
+      if (placeholder && placeholder.parentNode) {
+        placeholder.parentNode.insertBefore(counter, placeholder);
+        placeholder.remove();
+      }
       gsap.set(counter, {
         clearProps: "position,left,top,zIndex,transform",
       });
@@ -802,6 +814,102 @@ function initPageTransitions() {
     });
   }
 
+  function pageLeaveParallaxUnder(current, next) {
+    // -----------VARIABLES--------------
+    const transitionWrap = document.querySelector("[data-transition-wrap]");
+    const transitionDark = transitionWrap.querySelector("[data-transition-dark]");
+    CustomEase.create("parallax", "0.7, 0.05, 0.13, 1");
+    // ------------var_end---------------
+
+    const tl = gsap.timeline({
+      onComplete: () => { current.remove() }
+    });
+
+    if (reducedMotion) {
+      // Immediate swap behavior if user prefers reduced motion
+      return tl.set(current, { autoAlpha: 0 });
+    }
+
+    // -----------TIMELINE---------------
+
+    tl.set(transitionWrap, {
+      zIndex: 2
+    })
+
+    tl.set(current, {
+      position: "relative",
+      zIndex: 3,
+    });
+
+    tl.fromTo(transitionDark, {
+      autoAlpha: 0.8,
+    }, {
+      autoAlpha: 0,
+      duration: 1.2,
+      ease: "parallax"
+    }, 0)
+
+    tl.fromTo(current, {
+      y: "0vh",
+    },
+      {
+        y: "100vh",
+        duration: 1.2,
+        ease: "parallax"
+      }, 0);
+
+    tl.set(transitionDark, {
+      autoAlpha: 0,
+    })
+    // ------------tl_end----------------
+    return tl;
+  }
+
+  function pageEnterParallaxUnder(next) {
+    // -----------VARIABLES--------------
+
+    // ------------var_end---------------
+
+    const tl = gsap.timeline();
+
+    if (reducedMotion) {
+      // Immediate swap behavior if user prefers reduced motion
+      tl.set(next, { autoAlpha: 1 });
+      tl.add("pageReady")
+      tl.call(resetPage, [next], "pageReady");
+      return new Promise(resolve => tl.call(resolve, null, "pageReady"));
+    }
+
+    // -----------TIMELINE---------------
+    //gsap marker: marks the start of the animation
+    tl.add("startEnter", 0);
+
+    tl.fromTo(next, {
+      y: "-25vh",
+    }, {
+      y: "0vh",
+      duration: 1.2,
+      clearProps: "all",
+      ease: "parallax"
+    }, "startEnter");
+
+    tl.call(() => dispatchPageVisible(next), null, "startEnter");
+
+    //gsap marker: marks the end of the animation
+    tl.add("pageReady");
+
+    addSectionReveal(tl, next, "startEnter-=-5");
+    addTextReveals(tl, next, "pageReady-=0");
+    addElementReveals(tl, next, "pageReady-=0");
+    // ------------tl_end----------------
+
+    tl.call(resetPage, [next], "pageReady");
+
+    return new Promise(resolve => {
+      tl.call(resolve, null, "pageReady");
+    });
+  }
+
   function leaveItemToDetailTransition(current, next, trigger) {
     const clicked = trigger.closest("[data-pagetransition-trigger]");
     if (!clicked) return pageLeaveCrossFade(current, next);
@@ -906,8 +1014,7 @@ function initPageTransitions() {
   // -----------------------------------------
 
   barba.hooks.beforeEnter(data => {
-    // Position new container on top
-    //const navBottom = document.querySelector('.navbar_component')?.getBoundingClientRect().bottom || 0;
+    // const navBottom = document.querySelector('[data-top-bar]')?.getBoundingClientRect().bottom || 0;
     gsap.set(data.next.container, {
       position: "fixed",
       top: 0,
@@ -983,19 +1090,10 @@ function initPageTransitions() {
         // First load
         async once(data) {
           initOnceFunctions();
-
           return runCoinPreloader(data.next.container);
         },
-
-        // Current page leaves
-        async leave(data) {
-          return pageLeaveParallaxOver(data.current.container, data.next.container);
-        },
-
-        // New page enters
-        async enter(data) {
-          return pageEnterParallaxOver(data.next.container);
-        }
+        async leave(data) { return pageLeaveParallaxOver(data.current.container, data.next.container); },
+        async enter(data) { return pageEnterParallaxOver(data.next.container); }
       },
       { //self
         name: "self",
@@ -1018,6 +1116,13 @@ function initPageTransitions() {
         async enter(data) {
           return runPageEnterSelf(data.next.container);
         }
+      },
+      { //parallax under
+        name: "parallax under",
+        custom: ({ trigger }) => trigger?.hasAttribute?.("data-transition-back"),
+        sync: true,
+        async leave(data) { return pageLeaveParallaxUnder(data.current.container, data.next.container); },
+        async enter(data) { return pageEnterParallaxUnder(data.next.container); }
       },
       { //crossfade
         name: "crossfade",
@@ -1128,26 +1233,43 @@ function initPageTransitions() {
   }
 
   function initBarbaNavUpdate(data) {
-    var tpl = document.createElement('template');
+    const tpl = document.createElement('template');
     tpl.innerHTML = data.next.html.trim();
-    var nextNodes = tpl.content.querySelectorAll('[data-barba-update]');
-    var currentNodes = document.querySelectorAll('nav [data-barba-update]');
 
-    currentNodes.forEach(function (curr, index) {
-      var next = nextNodes[index];
+    // Nav links: sync aria-current + full class list (paired by document order).
+    const currentLinks = document.querySelectorAll('[data-barba-update]:not([data-barba-update="variant"])');
+    const nextLinks = tpl.content.querySelectorAll('[data-barba-update]:not([data-barba-update="variant"])');
+
+    currentLinks.forEach((curr, i) => {
+      const next = nextLinks[i];
       if (!next) return;
 
-      // Aria-current sync
-      var newStatus = next.getAttribute('aria-current');
-      if (newStatus !== null) {
-        curr.setAttribute('aria-current', newStatus);
-      } else {
-        curr.removeAttribute('aria-current');
-      }
+      const status = next.getAttribute('aria-current');
+      if (status !== null) curr.setAttribute('aria-current', status);
+      else curr.removeAttribute('aria-current');
 
-      // Class list sync
-      var newClassList = next.getAttribute('class') || '';
-      curr.setAttribute('class', newClassList);
+      curr.setAttribute('class', next.getAttribute('class') || '');
+    });
+
+    // Webflow component variants: inside [data-barba-update="variant"],
+    // sync only the w-variant-* classes on matching descendants.
+    const currentScopes = document.querySelectorAll('[data-barba-update="variant"]');
+    const nextScopes = tpl.content.querySelectorAll('[data-barba-update="variant"]');
+
+    currentScopes.forEach((scope, i) => {
+      const nextScope = nextScopes[i];
+      if (!nextScope) return;
+
+      const currEls = scope.querySelectorAll('*');
+      const nextEls = nextScope.querySelectorAll('*');
+
+      currEls.forEach((curr, j) => {
+        const next = nextEls[j];
+        if (!next) return;
+
+        [...curr.classList].filter(c => c.startsWith('w-variant-')).forEach(c => curr.classList.remove(c));
+        [...next.classList].filter(c => c.startsWith('w-variant-')).forEach(c => curr.classList.add(c));
+      });
     });
   }
 

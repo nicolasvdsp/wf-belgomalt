@@ -837,7 +837,6 @@ function initPageTransitions() {
     })
 
     tl.set(current, {
-      position: "relative",
       zIndex: 3,
     });
 
@@ -1014,20 +1013,41 @@ function initPageTransitions() {
   // -----------------------------------------
 
   barba.hooks.beforeEnter(data => {
-    // const navBottom = document.querySelector('[data-top-bar]')?.getBoundingClientRect().bottom || 0;
-    gsap.set(data.next.container, {
+    if (lenis) lenis.stop();
+
+    const current = data.current?.container;
+    const next = data.next?.container;
+
+    // Pin + clip the leaving container so only the currently-visible
+    // viewport slice is rendered during the transition. This way the
+    // animation looks the same regardless of scroll position, and no
+    // previously-scrolled content leaks back into view.
+    if (current && current !== next) {
+      const rect = current.getBoundingClientRect();
+      const insetTop = Math.max(0, -rect.top);
+      const insetBottom = Math.max(0, rect.bottom - window.innerHeight);
+
+      gsap.set(current, {
+        position: "fixed",
+        top: rect.top,
+        left: 0,
+        right: 0,
+        clipPath: `inset(${insetTop}px 0 ${insetBottom}px 0)`,
+      });
+      window.scrollTo(0, 0);
+    }
+
+    // Position the incoming container at the top of the viewport, always
+    // starting from the top of its own scroll.
+    gsap.set(next, {
       position: "fixed",
       top: 0,
       left: 0,
       right: 0,
     });
 
-    if (lenis) {
-      lenis.stop();
-    }
-
-    initBeforeEnterFunctions(data.next.container);
-    applyThemeFrom(data.next.container);
+    initBeforeEnterFunctions(next);
+    applyThemeFrom(next);
   });
 
   barba.hooks.afterLeave(() => {

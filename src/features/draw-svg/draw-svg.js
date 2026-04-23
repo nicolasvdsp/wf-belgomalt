@@ -1,4 +1,4 @@
-import { UNDERLINE_WORD_SVGS, UNDERLINE_BLOCK_SVGS, ARROW_SVGS } from './svg-pools';
+import { UNDERLINE_WORD_SVGS, UNDERLINE_BLOCK_SVGS, CIRCLE_WORD_SVGS, ARROW_SVGS } from './svg-pools';
 
 // ============================================
 // DRAW SVG
@@ -21,6 +21,11 @@ import { UNDERLINE_WORD_SVGS, UNDERLINE_BLOCK_SVGS, ARROW_SVGS } from './svg-poo
 //                                     one-line block that's the full width;
 //                                     for a wrapped block only the last line
 //                                     is underlined.
+//
+//   data-draw-circle-word="word"      Match a word (case-insensitive, whole
+//                                     word) inside the element's text and
+//                                     draw a hand-drawn oval around it.
+//                                     Multi-line wraps get one oval per line.
 //
 //   data-draw-arrow                   Draw a scribbled arrow inside a
 //                                     fixed-height container. Pass a numeric
@@ -49,29 +54,35 @@ import { UNDERLINE_WORD_SVGS, UNDERLINE_BLOCK_SVGS, ARROW_SVGS } from './svg-poo
 //   treated as the "line", the remaining sub-paths as the "arrowhead". The
 //   line draws first; the arrowhead starts at 90% of the line's duration.
 //
-// WORD-MODE ONLY
+// WORD-MODES ONLY (underline-word, circle-word)
 //
-//   data-draw-match-all="true|false"  Underline every occurrence of the word
+//   data-draw-match-all="true|false"  Decorate every occurrence of the word
 //                                     (default false = first match only).
 // ============================================
 
 const MODE = {
   UNDERLINE_WORD: 'underline-word',
   UNDERLINE_BLOCK: 'underline-block',
+  CIRCLE_WORD: 'circle-word',
   ARROW: 'arrow'
 };
 
 const MODE_ATTRIBUTE = {
   [MODE.UNDERLINE_WORD]: 'data-draw-underline-word',
   [MODE.UNDERLINE_BLOCK]: 'data-draw-underline-block',
+  [MODE.CIRCLE_WORD]: 'data-draw-circle-word',
   [MODE.ARROW]: 'data-draw-arrow'
 };
 
 const SVG_POOL = {
   [MODE.UNDERLINE_WORD]: UNDERLINE_WORD_SVGS,
   [MODE.UNDERLINE_BLOCK]: UNDERLINE_BLOCK_SVGS,
+  [MODE.CIRCLE_WORD]: CIRCLE_WORD_SVGS,
   [MODE.ARROW]: ARROW_SVGS
 };
+
+// Modes that target word matches inside text (share wrap logic + per-line rects).
+const WORD_MODES = new Set([MODE.UNDERLINE_WORD, MODE.CIRCLE_WORD]);
 
 const INIT_SELECTOR = Object.values(MODE_ATTRIBUTE)
   .map(attr => `[${attr}]`)
@@ -101,6 +112,7 @@ function decorateSvg(svg, mode) {
 function detectMode(el) {
   if (el.hasAttribute(MODE_ATTRIBUTE[MODE.UNDERLINE_WORD])) return MODE.UNDERLINE_WORD;
   if (el.hasAttribute(MODE_ATTRIBUTE[MODE.UNDERLINE_BLOCK])) return MODE.UNDERLINE_BLOCK;
+  if (el.hasAttribute(MODE_ATTRIBUTE[MODE.CIRCLE_WORD])) return MODE.CIRCLE_WORD;
   if (el.hasAttribute(MODE_ATTRIBUTE[MODE.ARROW])) return MODE.ARROW;
   return null;
 }
@@ -210,7 +222,7 @@ function wrapWordMatches(root, word, matchAll) {
 // Block mode: only the last line rect of the element's contents.
 // Arrow mode: the element's own bounding rect.
 function getDrawRects(mode, element, wordSpans) {
-  if (mode === MODE.UNDERLINE_WORD) {
+  if (WORD_MODES.has(mode)) {
     const rects = [];
     wordSpans.forEach(span => {
       Array.from(span.getClientRects()).forEach(rect => {
@@ -275,8 +287,8 @@ function initDrawSvg(container) {
 
     // Mode-specific prep
     let wordSpans = [];
-    if (mode === MODE.UNDERLINE_WORD) {
-      const rawWord = element.getAttribute(MODE_ATTRIBUTE[MODE.UNDERLINE_WORD]);
+    if (WORD_MODES.has(mode)) {
+      const rawWord = element.getAttribute(MODE_ATTRIBUTE[mode]);
       const word = rawWord && rawWord.trim();
       if (!word) return;
       const matchAll = isTruthyAttr(element.getAttribute('data-draw-match-all'));
@@ -354,6 +366,15 @@ function initDrawSvg(container) {
           box.style.top = '0';
           box.style.right = '0';
           box.style.bottom = '0';
+        } else if (mode === MODE.CIRCLE_WORD) {
+          // Enclose the word with a little breathing room so the oval
+          // doesn't kiss the letters. Padding scales with line-height.
+          const padX = rect.height * 0.25;
+          const padY = rect.height * 0.08;
+          box.style.left = `${rect.left - rootRect.left - padX}px`;
+          box.style.top = `${rect.top - rootRect.top - padY}px`;
+          box.style.width = `${rect.width + 2 * padX}px`;
+          box.style.height = `${rect.height + 2 * padY}px`;
         } else {
           // Underline: sit just under the target line.
           box.style.left = `${rect.left - rootRect.left}px`;
@@ -418,9 +439,9 @@ function initDrawSvg(container) {
       });
     }
 
-    // Trigger element for ScrollTrigger: first matched word (word mode)
+    // Trigger element for ScrollTrigger: first matched word (word modes)
     // or the element itself (block / arrow).
-    const triggerEl = mode === MODE.UNDERLINE_WORD ? wordSpans[0] : element;
+    const triggerEl = WORD_MODES.has(mode) ? wordSpans[0] : element;
 
     // Default trigger positions per mode — arrow fires earlier because it
     // sits as a large decorative asset and should feel like it "draws itself

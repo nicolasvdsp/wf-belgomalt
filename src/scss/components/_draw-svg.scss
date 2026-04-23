@@ -2,6 +2,7 @@
 
 [data-draw-underline-word],
 [data-draw-underline-block],
+[data-draw-circle-word],
 [data-draw-arrow] {
   position: relative;
 }
@@ -44,6 +45,11 @@
 .draw-svg__box--underline-block {
   height: 0.8em;
   transform: translateY(0.2em);
+}
+
+// Circle around a word: box fully encloses the word + padding (set by JS).
+.draw-svg__box--circle-word {
+  // Size/position set inline by JS (rect + em-based padding).
 }
 
 // Arrow: fills the container (user controls container size via CSS).

@@ -522,8 +522,31 @@ function initDrawSvg(container) {
 
 
 function drawSvg() {
-  document.addEventListener('barba:pageVisible', (e) => {
-    initDrawSvg(e.detail.container);
+  // Use `barba:afterEnter` — fired from `initAfterEnterFunctions` AFTER the
+  // transition's enter timeline has finished (including `clearProps: "all"`
+  // which removes the `position: fixed` pin that `beforeEnter` set on the
+  // incoming container).
+  //
+  // Listening to `barba:pageVisible` instead fires DURING the enter timeline
+  // while the container is still fixed to the top of the viewport with a
+  // translate applied — ScrollTriggers created at that moment cache the
+  // wrong positions. Even though `ScrollTrigger.refresh()` runs later, the
+  // outcome is flaky because the fresh triggers have already computed start
+  // positions relative to the off-screen pinned container.
+  //
+  // We also defer one frame via `requestAnimationFrame` so the browser has
+  // a chance to commit any post-transition layout (lenis.resize + the outer
+  // hook's ScrollTrigger.refresh run synchronously after our handler). Then
+  // we explicitly refresh once our own triggers are in place.
+  const scheduleInit = (container) => {
+    requestAnimationFrame(() => {
+      initDrawSvg(container);
+      if (window.ScrollTrigger) window.ScrollTrigger.refresh();
+    });
+  };
+
+  document.addEventListener('barba:afterEnter', (e) => {
+    scheduleInit(e.detail.container);
   });
 }
 

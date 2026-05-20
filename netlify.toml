@@ -1,3 +1,18 @@
+[build]
+  publish = "dist"
+  command = "npm run build"
+
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+
+# Vite is loaded by Webflow as a <script src>, not by Netlify itself.
+# `framework = "#static"` tells `netlify dev` to skip framework autodetection
+# (which otherwise waits for Vite on port 5173 and times out).
+[dev]
+  framework = "#static"
+  port = 8888
+
 [[headers]]
   for = "/*" # you can configure the correct paths here
   [headers.values]

@@ -1,0 +1,24 @@
+{
+  "action": "upsert",
+  "originoId": "org-beer-0001",
+  "payload": {
+    "id": "org-beer-0001",
+    "name": "Belgomalt Test Brew",
+    "slug": "belgomalt-test-brew",
+    "brewery": "Brasserie de Test",
+    "style": "Belgian Tripel",
+    "abv": 8.5,
+    "ibu": 28,
+    "description": "A representative payload used while the real Origino contract is still being defined. Replace this fixture once the real schema lands.",
+    "story": "<p>Brewed with malt sourced from Belgomalt partner farms in Wallonia.</p>",
+    "ingredients": [
+      { "type": "malt", "name": "Pilsner Malt", "origin": "Wallonia, BE" },
+      { "type": "hops", "name": "Saaz", "origin": "Bohemia, CZ" },
+      { "type": "yeast", "name": "Belgian Tripel Yeast", "origin": "BE" },
+      { "type": "water", "name": "Soft Water", "origin": "Ardennes, BE" }
+    ],
+    "imageUrl": "https://images.unsplash.com/photo-1535958636474-b021ee887b13?w=1200",
+    "qrBatch": "2026-Q2-001",
+    "updatedAt": "2026-05-06T14:00:00.000Z"
+  }
+}

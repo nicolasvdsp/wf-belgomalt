@@ -53,6 +53,74 @@ A modern, scalable template for adding custom JavaScript to Webflow projects usi
 
 For details on Webflow integration, development workflow, CDN dependencies, feature configuration, and dev server port setup, see the **[Webflow Setup Guide](documentation/webflow-setup.md)**.
 
+## Origino → Webflow Sync (Netlify Function)
+
+A Netlify Function lives at `netlify/functions/origino-sync.js` and pushes content from Origino (or, for now, a hardcoded fixture) into the Webflow CMS via the Data API. Webflow renders the resulting pages server-side, so the QR-code landing pages don't need any client-side fetches at runtime.
+
+### One-time manual setup
+
+Before the function can run end-to-end:
+
+1. **Create a Webflow Site API token** in Workspace settings → Integrations → API access. Give it the `CMS:read` and `CMS:write` scopes.
+2. **Create the target Webflow collection** (e.g. "Beers") with the fields the page needs (`name`, `slug`, `brewery`, `style`, `description`, `story`, `ingredients`, `qr-batch`, `abv`, `ibu`, `main-image`).
+3. **Add a Plain text field** named **`Origino ID`** to that collection (Webflow will give it the slug `origino-id`). Mark it as **required** and **unique**. This is the idempotency anchor — without it, every webhook would create a duplicate.
+4. **Set environment variables**, both in Netlify (Site settings → Environment variables) and in a local `.env` for `netlify dev`:
+
+   | Variable | Description |
+   |---|---|
+   | `WEBFLOW_API_TOKEN` | Site API token from step 1 |
+   | `WEBFLOW_SITE_ID` | `69c533332e45232278dbfe34` |
+   | `WEBFLOW_COLLECTION_ID` | ID of the Webflow collection from step 2 |
+   | `SYNC_WEBHOOK_SECRET` | Self-generated random string, sent in `x-sync-secret` header |
+
+### Local development
+
+```bash
+npm install -g netlify-cli   # one-time
+netlify dev                  # serves the function alongside Vite
+```
+
+Trigger a sync against the fixture in [fixtures/origino-beer.sample.json](fixtures/origino-beer.sample.json):
+
+```bash
+curl -X POST http://localhost:8888/.netlify/functions/origino-sync \
+  -H "x-sync-secret: $SYNC_WEBHOOK_SECRET" \
+  -H "content-type: application/json" \
+  -d @fixtures/origino-beer.sample.json
+```
+
+Re-running the same command updates the existing item (idempotent). Switch the fixture's `"action"` to `"delete"` to remove it.
+
+### Endpoint contract
+
+`POST /.netlify/functions/origino-sync`
+
+```json
+{
+  "action": "upsert" | "delete",
+  "originoId": "abc-123",
+  "payload": { "...": "Origino item; ignored when action=delete" }
+}
+```
+
+Required header: `x-sync-secret: <SYNC_WEBHOOK_SECRET>` (constant-time compared).
+
+Response: `200 { ok: true, action, originoId, webflowItemId }` on success, or `4xx/5xx { ok: false, error, ... }` on failure.
+
+### File map
+
+| File | Purpose |
+|---|---|
+| [netlify/functions/origino-sync.js](netlify/functions/origino-sync.js) | HTTP entrypoint, secret check, action dispatch |
+| [netlify/lib/config.js](netlify/lib/config.js) | Env-var loading + validation |
+| [netlify/lib/webflow-client.js](netlify/lib/webflow-client.js) | Wrapper around `webflow-api` SDK (list/create/update/delete) |
+| [netlify/lib/mapper.js](netlify/lib/mapper.js) | `mapOriginoToWebflow()` — the one piece that changes when Origino's real payload lands |
+| [fixtures/origino-beer.sample.json](fixtures/origino-beer.sample.json) | Stand-in payload until Origino webhook contract is finalized |
+
+### Out of scope (future phases)
+
+Real Origino webhook signature verification, initial backfill of existing items, nightly reconciliation cron, asset/image upload pipeline, multi-collection routing.
+
 ## License
 
 MIT

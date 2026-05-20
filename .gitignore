@@ -6,3 +6,5 @@ dist-ssr
 .env
 .eslintcache
 yarn-error.log
+.netlify
+deno.lock

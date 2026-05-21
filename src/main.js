@@ -20,6 +20,7 @@ import faq from './features/faq';
 import utilities from './features/utilities';
 import sliders from './features/sliders';
 import drawSvg from './features/draw-svg/draw-svg';
+import defrost from './features/defrost';
 
 
 // ============================================
@@ -51,6 +52,7 @@ function runApp() {
     ACTIVE_FEATURES.utilities && utilities();
     ACTIVE_FEATURES.sliders && sliders();
     ACTIVE_FEATURES.drawSvg && drawSvg();
+    ACTIVE_FEATURES.utilities && defrost();
   }
 
   if (document.readyState === 'loading') {

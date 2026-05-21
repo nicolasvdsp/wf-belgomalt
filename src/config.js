@@ -22,6 +22,7 @@ export const INCLUDE_FEATURES = {
   utilities: true,
   sliders: true,
   drawSvg: true,
+  defrost: true,
   // Add more features as you create them:
   // cursor: false,
   // etc.

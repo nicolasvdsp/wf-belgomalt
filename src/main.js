@@ -21,6 +21,7 @@ import utilities from './features/utilities';
 import sliders from './features/sliders';
 import drawSvg from './features/draw-svg/draw-svg';
 import defrost from './features/defrost';
+import socialProof from './features/social-proof';
 
 
 // ============================================
@@ -53,6 +54,7 @@ function runApp() {
     ACTIVE_FEATURES.sliders && sliders();
     ACTIVE_FEATURES.drawSvg && drawSvg();
     ACTIVE_FEATURES.utilities && defrost();
+    ACTIVE_FEATURES.socialProof && socialProof();
   }
 
   if (document.readyState === 'loading') {

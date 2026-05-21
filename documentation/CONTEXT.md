@@ -8,10 +8,10 @@ Use this file at the start of a new chat to skip project discovery and jump stra
 
 ## Project Overview
 
-- Project name: `[project-name]`
-- Project type: `[marketing site / product site / web app / other]`
-- Primary platform: `[Webflow / custom frontend / hybrid]`
-- Short description: `[1-3 lines describing scope and goals]`
+- Project name: `wf-belgomalt`
+- Project type: `prototyping web app`
+- Primary platform: `Webflow (hybrid — Webflow visual builder + custom Vite-bundled JS/SCSS)`
+- Short description: A mobile-first prototype for Belgomalt (beer ingredient supplier). QR codes on bottles link to this Webflow site. The experience starts with a gamified loading screen (animated "malt-point" coins collecting in the corner), followed by a "You unlocked a beer" reveal. Visitors then explore ingredient origins (malt, hops, water) either through an immersive scrollytelling path or a quiz path. Data comes from Webflow CMS or an external API (secret token, fetched client-side). At the end, visitors can donate their collected coins to partners (details TBD). QR codes may be brand-, year-, or batch-specific (details TBD).
 
 ---
 
@@ -21,14 +21,15 @@ List the MCPs and tool usage rules for this project.
 
 - **Webflow MCP bridge**
   - Required state: Webflow Designer tab open, active, and not idle/backgrounded.
-  - Site ID: `[webflow-site-id]`
+  - Site ID: set in Netlify / local `.env` as `WEBFLOW_SITE_ID` (not committed)
+  - Status: **currently not working** — will revisit later.
   - Rules: no CSS shorthand in style calls; prefer longhand (`margin-top`, `padding-left`, etc.).
 - **Figma MCP**
-  - File/team: `[figma-file-or-team]`
+  - File: `Belgomalt - Prototype`
+  - Source-of-truth page: `Handoff`
   - Preferred workflow: use design context + screenshot tools together.
-  - Notes location: `[where dev notes are kept in Figma]`
 - **Other MCPs**
-  - `[mcp-name]`: `[usage rules / auth / constraints]`
+  - None configured yet.
 
 General preference: reuse existing variables/styles/components before creating new ones.
 
@@ -43,7 +44,8 @@ General preference: reuse existing variables/styles/components before creating n
 | Custom CSS | SCSS in `src/scss/components/` |
 | Animations | GSAP + ScrollTrigger (`window.gsap`)  |
 | Page transitions | Barba.js |
-| Build | Vite (via `npm run dev`) |
+| Data | Webflow CMS or external API (fetch with secret token) |
+| Build | Vite on port 3013 (via `npm run dev`) |
 
 ---
 
@@ -136,8 +138,7 @@ Keep only patterns that should be reused across projects. Add/remove as needed.
 
 Project-specific CSS gotchas:
 
-- `[gotcha-1]`
-- `[gotcha-2]`
+- Mobile-first prototype — desktop may either have dedicated responsive screens or a front-end blocker asking visitors to use mobile (TBD).
 
 ---
 
@@ -172,14 +173,12 @@ All animations and transitions must respect `prefers-reduced-motion: reduce`.
 
 ## Developer Preferences
 
-Set preferences that should guide all implementation decisions for this project.
-
-- JS hooks: `[data-attributes / class hooks / hybrid]`
-- DOM injection policy: `[allowed / avoid when embed can do it]`
-- CSS strategy: `[minimal custom CSS / utility-first / other]`
-- Interaction defaults: `[hover policy, motion defaults, accessibility baseline]`
-- Design handoff expectations: `[where to read notes, required screenshots/context]`
-- Testing/verification standard: `[manual QA list / automated checks]`
+- JS hooks: `data-attributes` preferred (e.g. `data-loading-screen`, `data-coin`), with hardcoded fallbacks in JS.
+- DOM injection policy: allowed where Webflow embeds can't handle it (e.g. dynamic coin animations, quiz logic).
+- CSS strategy: minimal custom CSS — only what can't be done cleanly in Webflow's visual builder.
+- Interaction defaults: mobile-first touch interactions; respect `prefers-reduced-motion`.
+- Design handoff expectations: Figma file "Belgomalt - Prototype", page "Handoff" is the single source of truth. Use Figma MCP for context and screenshots.
+- Testing/verification standard: manual QA on mobile (primary), desktop as secondary.
 
 ---
 

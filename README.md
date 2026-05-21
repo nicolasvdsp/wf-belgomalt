@@ -69,7 +69,7 @@ Before the function can run end-to-end:
    | Variable | Description |
    |---|---|
    | `WEBFLOW_API_TOKEN` | Site API token from step 1 |
-   | `WEBFLOW_SITE_ID` | `69c533332e45232278dbfe34` |
+   | `WEBFLOW_SITE_ID` | Site ID from Webflow → Site settings (do not commit the value) |
    | `WEBFLOW_COLLECTION_ID` | ID of the Webflow collection from step 2 |
    | `SYNC_WEBHOOK_SECRET` | Self-generated random string, sent in `x-sync-secret` header |
 

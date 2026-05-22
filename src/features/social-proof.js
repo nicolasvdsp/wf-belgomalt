@@ -528,6 +528,12 @@ function initSocialProof(container) {
       avatars.forEach(avatar => {
         instance.microTimelines.push(startAvatarMicroLoop(gsap, avatar, settings));
       });
+      // The reveal's onComplete may fire after the wall has already scrolled
+      // out of view (IO already toggled isVisible=false), so honor the
+      // latest visibility state instead of unconditionally playing.
+      if (!instance.isVisible) {
+        instance.microTimelines.forEach(tl => tl.pause());
+      }
     };
 
     const startMarquees = () => {
@@ -548,18 +554,25 @@ function initSocialProof(container) {
     // pause when offscreen to save cycles.
     startMarquees();
 
-    if (instance.marqueeTimelines.length) {
-      instance.intersectionObserver = new IntersectionObserver(entries => {
-        entries.forEach(entry => {
-          instance.isVisible = entry.isIntersecting;
-          instance.marqueeTimelines.forEach(tl => {
-            if (entry.isIntersecting) tl.play();
-            else tl.pause();
-          });
-        });
-      }, { threshold: 0 });
-      instance.intersectionObserver.observe(root);
-    }
+    // Pause every timeline (marquees + per-avatar float/pulse) when the wall
+    // is offscreen so it consumes zero main-thread / RAF budget on pages
+    // where it isn't visible.
+    const pauseAll = () => {
+      instance.marqueeTimelines.forEach(tl => tl.pause());
+      instance.microTimelines.forEach(tl => tl.pause());
+    };
+    const resumeAll = () => {
+      instance.marqueeTimelines.forEach(tl => tl.play());
+      instance.microTimelines.forEach(tl => tl.play());
+    };
+    instance.intersectionObserver = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        instance.isVisible = entry.isIntersecting;
+        if (entry.isIntersecting) resumeAll();
+        else pauseAll();
+      });
+    }, { threshold: 0 });
+    instance.intersectionObserver.observe(root);
 
     // Keep block widths + row stagger in sync with the wall. When the wall
     // width changes, re-flow the layout and recreate the marquee timelines so

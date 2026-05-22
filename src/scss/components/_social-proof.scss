@@ -1,0 +1,48 @@
+// Social proof wall — `.socialproof_avatar-wrapper` and `.image-2` are fully
+// styled in Webflow (size, border, border-radius, object-fit, etc.). The JS
+// (`src/features/social-proof.js`) rebuilds the inner DOM and re-applies
+// those classes so Webflow styles keep working. The rules below only cover
+// the row/track/block scaffolding the JS inserts between the wall and the
+// existing avatar wrappers.
+
+[data-socialproof-wall] {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  overflow: clip;
+}
+
+.socialproof_row {
+  position: relative;
+  display: block;
+  width: 100%;
+  overflow: clip;
+}
+
+.socialproof_row + .socialproof_row {
+  margin-top: 1rem;
+}
+
+.socialproof_row-track {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+  will-change: transform;
+}
+
+// Each block is sized to the wall width by JS, then divided into equal-width
+// columns via grid. Avatars are centered inside their column so the rhythm
+// stays uniform regardless of individual avatar size — a small avatar can't
+// "stick" to a bigger neighbor because each slot is the same width. With
+// marquee on, two identical blocks tile the track and translate -50% for a
+// seamless loop.
+.socialproof_row-block {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  align-items: center;
+  justify-items: center;
+  flex: 0 0 auto;
+}

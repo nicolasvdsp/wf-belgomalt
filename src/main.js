@@ -53,7 +53,7 @@ function runApp() {
     ACTIVE_FEATURES.utilities && utilities();
     ACTIVE_FEATURES.sliders && sliders();
     ACTIVE_FEATURES.drawSvg && drawSvg();
-    ACTIVE_FEATURES.utilities && defrost();
+    ACTIVE_FEATURES.defrost && defrost();
     ACTIVE_FEATURES.socialProof && socialProof();
   }
 

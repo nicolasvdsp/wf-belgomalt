@@ -14,11 +14,4 @@
   touch-action: none;
   cursor: crosshair;
   pointer-events: auto;
-  // Smears the colored silhouette painted onto the canvas into condensation-
-  // like haze. Done in CSS (not `ctx.filter`) because WebKit/older Safari
-  // skips the canvas-context blur, leaving a sharp "skeleton" look. Value
-  // is set inline on the canvas via `--defrost-blur` from JS so each card
-  // can override with `data-defrost-blur`.
-  filter: blur(var(--defrost-blur, 26px));
-  -webkit-filter: blur(var(--defrost-blur, 26px));
 }

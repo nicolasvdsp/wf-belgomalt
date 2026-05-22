@@ -81,6 +81,60 @@ function easeOutCubic(t) {
   return 1 - Math.pow(1 - t, 3);
 }
 
+// One-time feature test for `ctx.filter` (canvas 2D context blur). Chrome and
+// modern Safari (17+) support it; older WebKit / iOS Safari silently no-op,
+// leaving the silhouette sharp ("skeleton frost"). Cached on first call.
+let _canvasFilterSupport = null;
+function canvasFilterSupported() {
+  if (_canvasFilterSupport !== null) return _canvasFilterSupport;
+  try {
+    const src = document.createElement('canvas');
+    src.width = 8;
+    src.height = 1;
+    const sctx = src.getContext('2d');
+    sctx.fillStyle = '#fff';
+    sctx.fillRect(0, 0, 4, 1);
+    sctx.fillStyle = '#000';
+    sctx.fillRect(4, 0, 4, 1);
+
+    const dst = document.createElement('canvas');
+    dst.width = 8;
+    dst.height = 1;
+    const dctx = dst.getContext('2d');
+    dctx.filter = 'blur(2px)';
+    dctx.drawImage(src, 0, 0);
+    // If blur ran, the pixel straddling the b/w boundary should fall between.
+    const px = dctx.getImageData(4, 0, 1, 1).data;
+    _canvasFilterSupport = px[0] > 20 && px[0] < 235;
+  } catch (_) {
+    _canvasFilterSupport = false;
+  }
+  return _canvasFilterSupport;
+}
+
+// Cross-browser fallback blur using the downscale + upscale trick: shrink the
+// source to a tiny intermediate canvas, then draw it back at full size with
+// bilinear filtering. Browsers apply the smoothing for free, which produces a
+// soft gaussian-ish smear. Quality is lower than `ctx.filter` but the look is
+// uniform enough that the eraser trail stays visibly circular.
+function drawBlurredFallback(dstCtx, srcCanvas, w, h, radius) {
+  const scale = Math.max(2, Math.round(radius / 2));
+  const dw = Math.max(1, Math.floor(w / scale));
+  const dh = Math.max(1, Math.floor(h / scale));
+
+  const tmp = document.createElement('canvas');
+  tmp.width = dw;
+  tmp.height = dh;
+  const tctx = tmp.getContext('2d');
+  tctx.imageSmoothingEnabled = true;
+  tctx.imageSmoothingQuality = 'high';
+  tctx.drawImage(srcCanvas, 0, 0, dw, dh);
+
+  dstCtx.imageSmoothingEnabled = true;
+  dstCtx.imageSmoothingQuality = 'high';
+  dstCtx.drawImage(tmp, 0, 0, w, h);
+}
+
 function parseNumber(value, fallback) {
   const n = parseFloat(value);
   return Number.isFinite(n) && n > 0 ? n : fallback;
@@ -295,13 +349,6 @@ function initDefrost(container) {
     const canvas = document.createElement('canvas');
     canvas.className = 'defrost__overlay';
     canvas.setAttribute('aria-hidden', 'true');
-    // Apply the frost blur via CSS rather than `ctx.filter` on the 2D context.
-    // `ctx.filter` is unreliable in WebKit/older Safari — the colored silhouette
-    // rectangles end up unblurred ("skeleton look"). CSS `filter: blur()` is
-    // rock-solid across browsers and only blurs the painted frost; the cleared
-    // (transparent) trail stays sharp because there's nothing on the canvas
-    // there to blur.
-    canvas.style.setProperty('--defrost-blur', `${blurPx}px`);
     element.appendChild(canvas);
 
     // `willReadFrequently: true` opts the canvas into a CPU-backed buffer so
@@ -332,10 +379,21 @@ function initDefrost(container) {
 
       ctx.globalCompositeOperation = 'source-over';
 
-      // Silhouette drawn sharp on the canvas — CSS `filter: blur(...)` on
-      // `.defrost__overlay` does the smearing into condensation-like haze.
-      // See note above where the canvas element is created.
-      ctx.drawImage(silhouette, 0, 0, width, height);
+      // Pre-blur the silhouette into condensation-like haze BEFORE drawing it
+      // to the main canvas. The eraser then carves crisp circular holes into
+      // already-smooth frost — surrounding pixels can't "bleed" rectangular
+      // text-bar shapes into the trail. `ctx.filter` is the high-quality path
+      // (Chrome / Safari 17+); older WebKit silently no-ops it so we fall back
+      // to a downscale-upscale blur that works everywhere.
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      if (canvasFilterSupported()) {
+        ctx.filter = `blur(${blurPx}px)`;
+        ctx.drawImage(silhouette, 0, 0, width, height);
+        ctx.filter = 'none';
+      } else {
+        drawBlurredFallback(ctx, silhouette, width, height, blurPx);
+      }
 
       // Light glaze on top to give it a wet glass feel.
       if (glaze) {

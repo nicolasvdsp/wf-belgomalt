@@ -295,6 +295,13 @@ function initDefrost(container) {
     const canvas = document.createElement('canvas');
     canvas.className = 'defrost__overlay';
     canvas.setAttribute('aria-hidden', 'true');
+    // Apply the frost blur via CSS rather than `ctx.filter` on the 2D context.
+    // `ctx.filter` is unreliable in WebKit/older Safari — the colored silhouette
+    // rectangles end up unblurred ("skeleton look"). CSS `filter: blur()` is
+    // rock-solid across browsers and only blurs the painted frost; the cleared
+    // (transparent) trail stays sharp because there's nothing on the canvas
+    // there to blur.
+    canvas.style.setProperty('--defrost-blur', `${blurPx}px`);
     element.appendChild(canvas);
 
     // `willReadFrequently: true` opts the canvas into a CPU-backed buffer so
@@ -325,10 +332,10 @@ function initDefrost(container) {
 
       ctx.globalCompositeOperation = 'source-over';
 
-      // Heavy blur smears the colored rectangles into condensation-like haze.
-      ctx.filter = `blur(${blurPx}px)`;
+      // Silhouette drawn sharp on the canvas — CSS `filter: blur(...)` on
+      // `.defrost__overlay` does the smearing into condensation-like haze.
+      // See note above where the canvas element is created.
       ctx.drawImage(silhouette, 0, 0, width, height);
-      ctx.filter = 'none';
 
       // Light glaze on top to give it a wet glass feel.
       if (glaze) {

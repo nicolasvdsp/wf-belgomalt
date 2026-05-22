@@ -1,0 +1,17 @@
+// Defrost — canvas frost overlay erased by pointer trails.
+[data-defrost-element] {
+  position: relative;
+  overflow: hidden;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.defrost__overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: block;
+  touch-action: none;
+  cursor: crosshair;
+  pointer-events: auto;
+}

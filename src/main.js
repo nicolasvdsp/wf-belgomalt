@@ -23,6 +23,7 @@ import drawSvg from './features/draw-svg/draw-svg';
 import defrost from './features/defrost';
 import socialProof from './features/social-proof';
 import journeyMap from './features/journey-map';
+import gameQuiz from './features/game-quiz';
 
 
 // ============================================
@@ -57,6 +58,7 @@ function runApp() {
     ACTIVE_FEATURES.defrost && defrost();
     ACTIVE_FEATURES.socialProof && socialProof();
     ACTIVE_FEATURES.journeyMap && journeyMap();
+    ACTIVE_FEATURES.gameQuiz && gameQuiz();
   }
 
   if (document.readyState === 'loading') {

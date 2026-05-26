@@ -25,6 +25,7 @@ export const INCLUDE_FEATURES = {
   defrost: true,
   socialProof: true,
   journeyMap: true,
+  gameQuiz: true,
   // Add more features as you create them:
   // cursor: false,
   // etc.

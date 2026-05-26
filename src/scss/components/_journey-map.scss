@@ -1,7 +1,3 @@
-// Journey Map — Mapbox path between waypoints with active pulsing pin.
-//
-// Tokens overridable per-instance via CSS custom properties on the wrapper.
-// (Webflow style panel won't see these, but page-level Custom Code can.)
 :root {
   --journey-pin-color: #a8dc68;
   --journey-pin-glow: rgba(168, 220, 104, 0.35);
@@ -11,9 +7,6 @@
 
 [data-journey-init] {
   position: relative;
-
-  // Cooperative gestures overlay sits inside the map container; nothing else
-  // for the wrapper to set up.
 }
 
 [data-journey-map] {
@@ -22,12 +15,8 @@
   height: 100%;
   min-height: 280px;
   overflow: hidden;
-  // The wrapper or a parent should set explicit height; this min-height is
-  // just a safety net for unstyled previews.
 }
 
-// Pin — small filled disc. Outer glow ring is rendered via box-shadow so
-// the hit-target stays tight.
 .journey-pin {
   width: var(--journey-pin-size);
   height: var(--journey-pin-size);
@@ -35,7 +24,7 @@
   background: var(--journey-pin-color);
   box-shadow: 0 0 0 4px var(--journey-pin-glow);
   cursor: pointer;
-  transform: translateZ(0); // hint for smoother CSS animation
+  transform: translateZ(0);
 }
 
 .journey-pin--active {
@@ -44,8 +33,6 @@
   position: relative;
 }
 
-// Pulse ring on the active pin. Uses a pseudo-element so the pulse can
-// animate independent of the pin itself (no double-paint of the pin face).
 .journey-pin--active::after {
   content: '';
   position: absolute;
@@ -67,108 +54,45 @@
   }
 }
 
-// Reduced motion — drop the pulse, keep the soft glow.
 @media (prefers-reduced-motion: reduce) {
   .journey-pin--active::after {
     animation: none;
   }
 }
 
-// Progress bar — JS clones [data-journey-progress-step] once per step inside
-// its template parent and stamps a state value on each clone. Visual
-// appearance is the designer's domain; we provide two hooks:
-//
-//   1. --step-count       (int)   total step count, on the progress wrapper.
-//                                 Designer can write:
-//
-//                                   [data-journey-progress] {
-//                                     display: grid;
-//                                     grid-template-columns: repeat(var(--step-count), 1fr);
-//                                     gap: 4px;
-//                                   }
-//
-//   2. --journey-progress (0..1)  per-segment playback value, updated every
-//                                 animation frame on each
-//                                 [data-journey-progress-step]. Use it to
-//                                 drive the Instagram-style left→right fill,
-//                                 e.g. via a linear-gradient background:
-//
-//                                   [data-journey-progress-step] {
-//                                     background: linear-gradient(
-//                                       to right,
-//                                       currentColor 0%,
-//                                       currentColor calc(var(--journey-progress) * 100%),
-//                                       rgba(255,255,255,0.4) calc(var(--journey-progress) * 100%),
-//                                       rgba(255,255,255,0.4) 100%
-//                                     );
-//                                   }
-//
-//                                 …or via a child element with
-//                                 `width: calc(var(--journey-progress) * 100%)`.
-//
-// State styling hooks for the designer to target (no defaults imposed):
-//   [data-journey-progress-step]              base
-//   [data-journey-progress-step="active"]     current step (animating)
-//   [data-journey-progress-step="unlocked"]   past (progress=1) or future (progress=0)
-//   [data-journey-progress-step="locked"]     batch-dependent, awaiting unlock
+// Progress bar — shared structure, driven by --progress (0..1) and --step-count.
+// State values on [data-progress-bar]: "active" | "unlocked" | "locked"
 
 [data-journey-progress] {
   --step-count: 1;
 }
 
-[data-journey-progress-step] {
-  --journey-progress: 0;
+[data-progress-bar] {
+  --progress: 0;
   position: relative;
 }
 
-
-
-// Optional inner fill element. If the designer adds a child marked
-// [data-journey-progress-step-progress] inside the step (recommended for full
-// styling control over track vs. fill), we drive it with a GPU-accelerated
-// horizontal scale — no per-frame layout, smooth at 60fps even on weaker
-// devices. The child becomes a full-bleed layer of its parent; designers can
-// override `transform-origin` or swap to width-based fills if preferred.
-[data-journey-progress-step-progress] {
+[data-progress-fill] {
   position: absolute;
   inset: 0;
   transform-origin: left center;
-  transform: scaleX(var(--journey-progress, 0));
+  transform: scaleX(var(--progress, 0));
   pointer-events: none;
 }
 
 // Play / pause icon toggle.
-//
-// The designer puts two icon elements inside the header carrying:
-//   data-icon-playstate="play"    the play-triangle icon
-//   data-icon-playstate="pause"   the pause-bars icon
-//
-// The JS writes "playing" or "paused" on the wrapper's data-journey-state.
-// The rule below hides whichever icon represents the CURRENT state, so the
-// user only ever sees the icon for the action they can take next:
-//
-//   wrapper="playing" → hide play icon → pause icon visible (click to pause)
-//   wrapper="paused"  → hide pause icon → play icon visible (click to play)
-//
-// Both icons are wired by the JS as click targets; clicking either one
-// toggles the wrapper state, so the visible icon always does the right thing.
+// Hides the icon matching the current state so only the "next action" icon shows.
 [data-icon-playstate] {
   cursor: pointer;
   user-select: none;
 }
 
 [data-journey-state="playing"] [data-icon-playstate="play"],
-[data-journey-state="paused"] [data-icon-playstate="pause"] {
+[data-journey-state="paused"]  [data-icon-playstate="pause"] {
   display: none;
 }
 
-
-// Mapbox chrome tweaks.
-//
-// Note: per Mapbox TOS, the logo and "© Mapbox" attribution must remain
-// visible unless you're on an Enterprise plan. We keep both, just tone them
-// down to match the dark UI. The compact attribution control (initialized in
-// JS) is already collapsed to a small "i" by default.
+// Mapbox attribution — keep visible (TOS), tone down for dark UI.
 [data-journey-init] {
   .mapboxgl-ctrl-attrib {
     background: rgba(0, 0, 0, 0.4);
@@ -179,7 +103,6 @@
     }
   }
 }
-
 
 .mapboxgl-ctrl-bottom-left,
 .mapboxgl-ctrl-bottom-right {

@@ -20,7 +20,7 @@
 // PLAYBACK MODEL
 //
 // Each step carries a `progress` value 0..1 which drives BOTH:
-//   • the progress-bar segment's fill   (via `--journey-progress` CSS var)
+//   • the progress-bar segment's fill   (via `--progress` CSS var)
 //   • the line segment from step N-1 → step N (via `line-trim-offset`)
 //
 // Auto-play loop (when a step becomes active):
@@ -52,16 +52,16 @@
 //     <div data-journey-map></div>                  (required) Mapbox canvas
 //
 //     <header data-journey-progress>                Progress bar wrapper.
-//       <div data-journey-progress-step>             ONE template segment.
-//         <div data-journey-progress-step-progress>  Optional inner fill
+//       <div data-progress-bar>             ONE template segment.
+//         <div data-progress-fill>  Optional inner fill
 //         </div>                                     (designer styles it
-//         <div data-journey-progress-step-lock>      relative to its parent).
+//         <div data-progress-icon>      relative to its parent).
 //           <!-- lock icon -->                       JS clones the whole
 //         </div>                                       segment once per step.
 //       </div>                                       State value:
 //                                                      "active" / "unlocked" / "locked"
 //                                                    CSS variable per clone:
-//                                                      --journey-progress: 0..1
+//                                                      --progress: 0..1
 //       <svg data-icon-playstate="play"></svg>     Optional. The two icons
 //       <svg data-icon-playstate="pause"></svg>    are clickable toggles;
 //     </header>                                      clicking either flips
@@ -98,9 +98,9 @@
 //   data-journey-state="playing|paused"     Updated when a play/pause icon is clicked.
 //
 // CSS VARIABLES (set per progress segment):
-//   --journey-progress: 0..1     Drives left-to-right fill on the bar.
+//   --progress: 0..1     Drives left-to-right fill on the bar.
 //                                  Inherits to any nested element, including
-//                                  [data-journey-progress-step-progress] which
+//                                  [data-progress-fill] which
 //                                  the default SCSS scales horizontally.
 //   --step-count: <int>          Total step count, set on the progress wrapper(s).
 //
@@ -521,15 +521,15 @@ function applyMapPadding(instance) {
 // --------------------------------------------
 // Progress bar
 // --------------------------------------------
-// Designer builds ONE [data-journey-progress-step] somewhere inside the
+// Designer builds ONE [data-progress-bar] somewhere inside the
 // wrapper; we clone it once per step into the template's parent. Each clone
 // gets the state value ("active" / "unlocked" / "locked") as its attribute,
-// and a `--journey-progress: 0..1` CSS variable updated every animation
+// and a `--progress: 0..1` CSS variable updated every animation
 // frame so the designer's fill rule renders smoothly.
 function buildProgressBar(wrapper, steps) {
-  const template = wrapper.querySelector('[data-journey-progress-step]');
+  const template = wrapper.querySelector('[data-progress-bar]');
   if (!template) {
-    console.warn('[journey-map] No [data-journey-progress-step] template found inside [data-journey-init]; progress bar skipped.');
+    console.warn('[journey-map] No [data-progress-bar] template found inside [data-journey-init]; progress bar skipped.');
     return [];
   }
 
@@ -546,12 +546,12 @@ function buildProgressBar(wrapper, steps) {
 
   const segments = steps.map((step) => {
     const element = template.cloneNode(true);
-    element.setAttribute('data-journey-progress-step', '');
+    element.setAttribute('data-progress-bar', '');
     // Start every segment at progress 0; setActiveStep will animate from
     // there.
-    element.style.setProperty('--journey-progress', '0');
+    element.style.setProperty('--progress', '0');
 
-    const lockEl = element.querySelector('[data-journey-progress-step-lock]');
+    const lockEl = element.querySelector('[data-progress-icon]');
     if (lockEl) lockEl.style.display = step.batchDependent ? '' : 'none';
 
     // Capture the inner fill element (if any) and prime it with inline
@@ -565,7 +565,7 @@ function buildProgressBar(wrapper, steps) {
     //      animation we drive from RAF.
     // Inline styles dodge both problems and make the animation work
     // regardless of what the designer styled in Webflow.
-    const progressEl = element.querySelector('[data-journey-progress-step-progress]');
+    const progressEl = element.querySelector('[data-progress-fill]');
     if (progressEl) {
       progressEl.style.transformOrigin = 'left center';
       progressEl.style.transform = 'scaleX(0)';
@@ -681,8 +681,8 @@ function setStepProgress(instance, order, value) {
   if (seg) {
     // Keep the CSS variable up to date for designers who prefer to drive
     // their own fill (linear-gradient, width-based, anything that reads
-    // var(--journey-progress)).
-    seg.element.style.setProperty('--journey-progress', v.toFixed(4));
+    // var(--progress)).
+    seg.element.style.setProperty('--progress', v.toFixed(4));
     // And drive the inner fill via inline transform — see buildProgressBar
     // for why we do this directly instead of relying on the SCSS default.
     if (seg.progressEl) {
@@ -789,7 +789,7 @@ function setActiveStep(instance, order, options) {
     if (s.batchDependent) state = 'locked';
     else if (s.order === order) state = 'active';
     else state = 'unlocked';
-    seg.element.setAttribute('data-journey-progress-step', state);
+    seg.element.setAttribute('data-progress-bar', state);
   });
 
   // Card content swap.

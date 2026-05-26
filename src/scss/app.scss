@@ -6,3 +6,16 @@
 @use 'components/draw-svg';
 @use 'components/defrost';
 @use 'components/social-proof';
+@use 'components/journey-map';
+
+.gsap-slider__item {
+  display: flex !important;
+}
+
+.gsap-slider__item .demo-card {
+  justify-content: space-between !important;
+}
+
+.gsap-slider__item .demo-card .ui-button {
+  flex-grow: 0 !important;
+}

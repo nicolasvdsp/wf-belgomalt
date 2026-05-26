@@ -22,6 +22,7 @@ import sliders from './features/sliders';
 import drawSvg from './features/draw-svg/draw-svg';
 import defrost from './features/defrost';
 import socialProof from './features/social-proof';
+import journeyMap from './features/journey-map';
 
 
 // ============================================
@@ -55,6 +56,7 @@ function runApp() {
     ACTIVE_FEATURES.drawSvg && drawSvg();
     ACTIVE_FEATURES.defrost && defrost();
     ACTIVE_FEATURES.socialProof && socialProof();
+    ACTIVE_FEATURES.journeyMap && journeyMap();
   }
 
   if (document.readyState === 'loading') {

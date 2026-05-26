@@ -24,6 +24,7 @@ export const INCLUDE_FEATURES = {
   drawSvg: true,
   defrost: true,
   socialProof: true,
+  journeyMap: true,
   // Add more features as you create them:
   // cursor: false,
   // etc.

@@ -135,7 +135,7 @@ const DEFAULTS = {
     [6.6, 51.7]
   ],
   minZoom: 6,
-  maxZoom: 12,
+  maxZoom: 100,
   fitPadding: 64,
   curvature: 0.18,
   bezierSamples: 64,
@@ -145,7 +145,7 @@ const DEFAULTS = {
   transitionDuration: 800,
   flyDuration: 1800,
   autoplay: true,
-  cooperativeGestures: true
+  cooperativeGestures: false
 };
 
 // Fixture rendered when no `data-journey-data` is provided. Five steps with
@@ -304,8 +304,8 @@ function stepsWithCoords(steps) {
 
 function isStepUnlocked(step) {
   return !step.batchDependent
-      && isFiniteNumber(step.lat)
-      && isFiniteNumber(step.lon);
+    && isFiniteNumber(step.lat)
+    && isFiniteNumber(step.lon);
 }
 
 function readJourneyData(wrapper) {
@@ -326,8 +326,8 @@ function readJourneyData(wrapper) {
 
 function getMapboxToken(wrapper) {
   return wrapper.getAttribute('data-journey-token')
-      || (typeof window !== 'undefined' && window.MAPBOX_TOKEN)
-      || null;
+    || (typeof window !== 'undefined' && window.MAPBOX_TOKEN)
+    || null;
 }
 
 function prefersReducedMotion() {
@@ -377,7 +377,7 @@ function addPins(map, mapboxgl, steps) {
 // destination step's order. `line-trim-offset` on each layer is driven
 // independently by the destination step's `progress` value.
 function segmentSourceId(toOrder) { return `journey-line-${toOrder}`; }
-function segmentLayerId(toOrder)  { return `journey-line-${toOrder}`; }
+function segmentLayerId(toOrder) { return `journey-line-${toOrder}`; }
 
 function addJourneySegments(map, steps, opts) {
   const segments = [];
@@ -493,10 +493,10 @@ function computeMapPadding(mapContainer, wrapper, basePadding) {
     // from that edge. The smallest value identifies which edge the element
     // is hugging (and how deep its occlusion goes from that edge).
     const extents = [
-      { side: 'top',    value: Math.max(0, rect.bottom - mapRect.top) },
+      { side: 'top', value: Math.max(0, rect.bottom - mapRect.top) },
       { side: 'bottom', value: Math.max(0, mapRect.bottom - rect.top) },
-      { side: 'left',   value: Math.max(0, rect.right - mapRect.left) },
-      { side: 'right',  value: Math.max(0, mapRect.right - rect.left) }
+      { side: 'left', value: Math.max(0, rect.right - mapRect.left) },
+      { side: 'right', value: Math.max(0, mapRect.right - rect.left) }
     ];
     extents.sort((a, b) => a.value - b.value);
     const closest = extents[0];
@@ -950,20 +950,20 @@ function destroyInstance(inst) {
   }
   cancelAllStepAnimations(inst);
   if (inst.pins) {
-    inst.pins.forEach((p) => { try { p.marker.remove(); } catch (_) {} });
+    inst.pins.forEach((p) => { try { p.marker.remove(); } catch (_) { } });
   }
   if (inst.map) {
     // Remove all journey-* layers + sources first, then the map itself.
     try {
       inst.lineSegments.forEach((s) => {
-        if (inst.map.getLayer(s.layerId))   inst.map.removeLayer(s.layerId);
+        if (inst.map.getLayer(s.layerId)) inst.map.removeLayer(s.layerId);
         if (inst.map.getSource(s.sourceId)) inst.map.removeSource(s.sourceId);
       });
     } catch (_) { /* ignore */ }
-    try { inst.map.remove(); } catch (_) {}
+    try { inst.map.remove(); } catch (_) { }
   }
   if (inst.ro) {
-    try { inst.ro.disconnect(); } catch (_) {}
+    try { inst.ro.disconnect(); } catch (_) { }
   }
   if (inst.wrapper) {
     delete inst.wrapper.dataset[INIT_FLAG];
@@ -1012,16 +1012,16 @@ function initInstance(wrapper) {
 
   // Merge config: data attributes win over defaults.
   const opts = {
-    mapStyle:           readStringAttr(wrapper, 'data-journey-style',               DEFAULTS.mapStyle),
-    fitPadding:         readNumberAttr(wrapper, 'data-journey-fit-padding',         DEFAULTS.fitPadding),
-    curvature:          readNumberAttr(wrapper, 'data-journey-curvature',           DEFAULTS.curvature),
-    lineColor:          readStringAttr(wrapper, 'data-journey-line-color',          DEFAULTS.lineColor),
-    lineWidth:          readNumberAttr(wrapper, 'data-journey-line-width',          DEFAULTS.lineWidth),
-    storyDuration:      readNumberAttr(wrapper, 'data-journey-story-duration',      DEFAULTS.storyDuration),
+    mapStyle: readStringAttr(wrapper, 'data-journey-style', DEFAULTS.mapStyle),
+    fitPadding: readNumberAttr(wrapper, 'data-journey-fit-padding', DEFAULTS.fitPadding),
+    curvature: readNumberAttr(wrapper, 'data-journey-curvature', DEFAULTS.curvature),
+    lineColor: readStringAttr(wrapper, 'data-journey-line-color', DEFAULTS.lineColor),
+    lineWidth: readNumberAttr(wrapper, 'data-journey-line-width', DEFAULTS.lineWidth),
+    storyDuration: readNumberAttr(wrapper, 'data-journey-story-duration', DEFAULTS.storyDuration),
     transitionDuration: readNumberAttr(wrapper, 'data-journey-transition-duration', DEFAULTS.transitionDuration),
-    flyDuration:        readNumberAttr(wrapper, 'data-journey-fly-duration',        DEFAULTS.flyDuration),
-    autoplay:           readBoolAttr  (wrapper, 'data-journey-autoplay',            DEFAULTS.autoplay),
-    bezierSamples:      DEFAULTS.bezierSamples
+    flyDuration: readNumberAttr(wrapper, 'data-journey-fly-duration', DEFAULTS.flyDuration),
+    autoplay: readBoolAttr(wrapper, 'data-journey-autoplay', DEFAULTS.autoplay),
+    bezierSamples: DEFAULTS.bezierSamples
   };
 
   // Default initial active step = the FIRST unlocked step (auto-play starts
@@ -1045,11 +1045,19 @@ function initInstance(wrapper) {
     minZoom: DEFAULTS.minZoom,
     maxZoom: DEFAULTS.maxZoom,
     maxBounds: DEFAULTS.maxBounds,
-    cooperativeGestures: DEFAULTS.cooperativeGestures,
     attributionControl: false,
     dragRotate: false,
     pitchWithRotate: false,
-    touchPitch: false
+    touchPitch: false,
+    // Desktop: scroll-zoom off (page scrolls), drag-pan off (not useful
+    // without scroll-zoom). Mouse users watch the cinematic flyTo.
+    scrollZoom: false,
+    dragPan: false,
+    doubleClickZoom: false,
+    // Touch: two-finger pinch-zoom + pan enabled. Single-finger scrolls the
+    // page naturally because dragPan is off. No "use 2 fingers" overlay
+    // (cooperativeGestures is off).
+    touchZoomRotate: true
   });
 
   map.addControl(new mapboxgl.AttributionControl({ compact: true }));

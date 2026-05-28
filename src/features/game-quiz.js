@@ -386,6 +386,69 @@ function initGameQuiz(container) {
     animateCounterTo(newValue);
   }
 
+  // --- Confetti ---
+  const confettiColors = ["#C9A84C", "#E5C76B", "#A68A3A", "#D4AF37", "#F2D675"];
+
+  function burstConfetti() {
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const count = gsap.utils.random(25, 40, 1);
+
+    for (let i = 0; i < count; i++) {
+      const ribbon = document.createElement("div");
+      ribbon.style.cssText = `
+        position: fixed;
+        width: ${gsap.utils.random(4, 8)}px;
+        height: ${gsap.utils.random(12, 22)}px;
+        background: ${gsap.utils.random(confettiColors)};
+        border-radius: 1px;
+        pointer-events: none;
+        will-change: transform, opacity;
+        z-index: 99999;
+      `;
+      document.body.appendChild(ribbon);
+
+      const startX = gsap.utils.random(0, vw);
+      const delay = gsap.utils.random(0, 0.8);
+      const duration = gsap.utils.random(2, 3.5);
+
+      gsap.set(ribbon, {
+        top: gsap.utils.random(-30, -80),
+        left: startX,
+        rotation: gsap.utils.random(0, 360),
+        scale: gsap.utils.random(0.7, 1.3),
+        autoAlpha: 1,
+      });
+
+      // Horizontal drift (swaying)
+      gsap.to(ribbon, {
+        left: startX + gsap.utils.random(-80, 80),
+        rotation: `+=${gsap.utils.random(-400, 400)}`,
+        duration: duration,
+        delay: delay,
+        ease: "sine.inOut",
+      });
+
+      // Vertical fall (gravity-like)
+      gsap.to(ribbon, {
+        top: vh + 50,
+        duration: duration,
+        delay: delay,
+        ease: "power1.in",
+        onComplete() {
+          ribbon.remove();
+        },
+      });
+
+      // Fade out near the end
+      gsap.to(ribbon, {
+        autoAlpha: 0,
+        duration: 0.5,
+        delay: delay + duration - 0.5,
+      });
+    }
+  }
+
   // --- Handlers ---
   function handleAnswer(e) {
     const btn = e.currentTarget;
@@ -415,6 +478,7 @@ function initGameQuiz(container) {
       questionEl.textContent = isCorrect ? "Correct answer!" : "Wrong answer!";
 
       if (isCorrect) {
+        burstConfetti();
         burstCoinsToCounter(btn);
       }
 

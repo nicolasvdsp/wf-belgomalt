@@ -112,6 +112,7 @@
 //   data-journey-line-color="#A8DC68"    Line stroke color
 //   data-journey-line-width="2.5"        Line stroke width
 //   data-journey-story-duration="5000"   ms per active story playback (auto-play)
+//   data-journey-draw-path-duration="2000" ms for line draw (clamped to storyDuration)
 //   data-journey-transition-duration="800" ms for non-active step transitions
 //   data-journey-fly-duration="1800"     ms for flyTo on each step change
 //   data-journey-autoplay="true|false"   Auto-advance on story complete (default true)
@@ -141,7 +142,8 @@ const DEFAULTS = {
   bezierSamples: 64,
   lineColor: '#A8DC68',
   lineWidth: 2.5,
-  storyDuration: 5000,
+  storyDuration: 7000,
+  drawPathDuration: 3000,
   transitionDuration: 800,
   flyDuration: 1800,
   autoplay: true,
@@ -673,62 +675,67 @@ function updateLockedCount(wrapper, steps) {
 // progress: it keeps the in-memory value, the progress-bar CSS variable, and
 // the corresponding line layer's trim-offset in lock-step. All animation
 // loops funnel through it.
-function setStepProgress(instance, order, value) {
+function setBarProgress(instance, order, value) {
   const v = Math.max(0, Math.min(1, value));
   instance.progress[order] = v;
 
   const seg = instance.progressSegments.find((s) => s.step.order === order);
   if (seg) {
-    // Keep the CSS variable up to date for designers who prefer to drive
-    // their own fill (linear-gradient, width-based, anything that reads
-    // var(--progress)).
     seg.element.style.setProperty('--progress', v.toFixed(4));
-    // And drive the inner fill via inline transform — see buildProgressBar
-    // for why we do this directly instead of relying on the SCSS default.
     if (seg.progressEl) {
       seg.progressEl.style.transform = `scaleX(${v.toFixed(4)})`;
     }
   }
+}
+
+function setLineProgress(instance, order, value) {
+  const v = Math.max(0, Math.min(1, value));
+  instance.lineProgress[order] = v;
 
   const lineSeg = instance.lineSegments.find((s) => s.toOrder === order);
   if (lineSeg && instance.map && instance.map.getLayer(lineSeg.layerId)) {
-    // `line-trim-offset: [a, b]` marks the line range [a, b] as TRANSPARENT
-    // (Mapbox calls this the "vanishing" range). The line geometry is stored
-    // ordered from N-1 → N, so to draw it forwards we want the transparent
-    // window to start at `progress` and extend to 1:
-    //   progress 0 ⇒ [0, 1] (entire line transparent → hidden)
-    //   progress 0.5 ⇒ [0.5, 1] (first half visible, second half transparent)
-    //   progress 1 ⇒ [1, 1] (zero-length range → fully visible)
-    // The visible fraction grows from the start of the geometry (origin)
-    // toward the end (destination), which is what reads as "drawing the line
-    // from location N-1 to location N".
     instance.map.setPaintProperty(lineSeg.layerId, 'line-trim-offset', [v, 1]);
   }
 }
 
-function cancelStepAnimation(instance, order) {
+function setStepProgress(instance, order, value) {
+  setBarProgress(instance, order, value);
+  setLineProgress(instance, order, value);
+}
+
+function cancelBarAnimation(instance, order) {
   if (instance.animationFrames[order]) {
     cancelAnimationFrame(instance.animationFrames[order]);
     delete instance.animationFrames[order];
   }
 }
 
+function cancelLineAnimation(instance, order) {
+  const key = 'line-' + order;
+  if (instance.animationFrames[key]) {
+    cancelAnimationFrame(instance.animationFrames[key]);
+    delete instance.animationFrames[key];
+  }
+}
+
+function cancelStepAnimation(instance, order) {
+  cancelBarAnimation(instance, order);
+  cancelLineAnimation(instance, order);
+}
+
 function cancelAllStepAnimations(instance) {
-  Object.keys(instance.animationFrames).forEach((order) => {
-    cancelAnimationFrame(instance.animationFrames[order]);
+  Object.keys(instance.animationFrames).forEach((key) => {
+    cancelAnimationFrame(instance.animationFrames[key]);
   });
   instance.animationFrames = {};
 }
 
-function animateProgress(instance, order, target, durationMs, easing, onDone) {
-  cancelStepAnimation(instance, order);
-
+function animateBar(instance, order, target, durationMs, easing, onDone) {
+  cancelBarAnimation(instance, order);
   const start = instance.progress[order] || 0;
 
-  // Skip the animation if there's no real distance to cover, or if the user
-  // prefers reduced motion. Either way, snap to target and call onDone.
   if (durationMs <= 0 || Math.abs(start - target) < 0.001 || prefersReducedMotion()) {
-    setStepProgress(instance, order, target);
+    setBarProgress(instance, order, target);
     if (onDone) onDone();
     return;
   }
@@ -736,8 +743,7 @@ function animateProgress(instance, order, target, durationMs, easing, onDone) {
   const startTs = performance.now();
   function frame(now) {
     const t = Math.min(1, (now - startTs) / durationMs);
-    const eased = easing(t);
-    setStepProgress(instance, order, start + (target - start) * eased);
+    setBarProgress(instance, order, start + (target - start) * easing(t));
     if (t < 1) {
       instance.animationFrames[order] = requestAnimationFrame(frame);
     } else {
@@ -746,6 +752,35 @@ function animateProgress(instance, order, target, durationMs, easing, onDone) {
     }
   }
   instance.animationFrames[order] = requestAnimationFrame(frame);
+}
+
+function animateLine(instance, order, target, durationMs, easing) {
+  cancelLineAnimation(instance, order);
+  const start = instance.lineProgress[order] || 0;
+  const key = 'line-' + order;
+
+  if (durationMs <= 0 || Math.abs(start - target) < 0.001 || prefersReducedMotion()) {
+    setLineProgress(instance, order, target);
+    return;
+  }
+
+  const startTs = performance.now();
+  function frame(now) {
+    const t = Math.min(1, (now - startTs) / durationMs);
+    setLineProgress(instance, order, start + (target - start) * easing(t));
+    if (t < 1) {
+      instance.animationFrames[key] = requestAnimationFrame(frame);
+    } else {
+      delete instance.animationFrames[key];
+    }
+  }
+  instance.animationFrames[key] = requestAnimationFrame(frame);
+}
+
+// Convenience: animate bar and line together at the same duration.
+function animateProgress(instance, order, target, durationMs, easing, onDone) {
+  animateBar(instance, order, target, durationMs, easing, onDone);
+  animateLine(instance, order, target, durationMs, easing);
 }
 
 
@@ -809,29 +844,15 @@ function setActiveStep(instance, order, options) {
       const current = instance.progress[s.order] || 0;
 
       const playStory = () => {
-        animateProgress(
-          instance,
-          s.order,
-          1,
-          instance.opts.storyDuration,
-          easeLinear,
-          () => autoAdvance(instance, s.order)
-        );
+        animateBar(instance, s.order, 1, instance.opts.storyDuration, easeLinear,
+          () => autoAdvance(instance, s.order));
+        animateLine(instance, s.order, 1, instance.opts.drawPathDuration, easeLinear);
       };
 
       if (isFirstActivation || current === 0) {
-        // Nothing to undraw; play directly.
         playStory();
       } else {
-        // Smooth undraw (current → 0), then linear play (0 → 1).
-        animateProgress(
-          instance,
-          s.order,
-          0,
-          instance.opts.transitionDuration,
-          easeInOutCubic,
-          playStory
-        );
+        animateProgress(instance, s.order, 0, instance.opts.transitionDuration, easeInOutCubic, playStory);
       }
     } else {
       const target = s.order < order ? 1 : 0;
@@ -916,17 +937,15 @@ function resumeFromVisibility(instance) {
 
 function resumeActiveStep(instance) {
   const order = instance.activeOrder;
-  const current = instance.progress[order] || 0;
-  const remainingMs = Math.max(0, instance.opts.storyDuration * (1 - current));
+  const barCurrent = instance.progress[order] || 0;
+  const lineCurrent = instance.lineProgress[order] || 0;
 
-  animateProgress(
-    instance,
-    order,
-    1,
-    remainingMs,
-    easeLinear,
-    () => autoAdvance(instance, order)
-  );
+  const barRemaining = Math.max(0, instance.opts.storyDuration * (1 - barCurrent));
+  animateBar(instance, order, 1, barRemaining, easeLinear,
+    () => autoAdvance(instance, order));
+
+  const lineRemaining = Math.max(0, instance.opts.drawPathDuration * (1 - lineCurrent));
+  animateLine(instance, order, 1, lineRemaining, easeLinear);
 }
 
 
@@ -1046,11 +1065,17 @@ function initInstance(wrapper) {
     lineColor: readStringAttr(wrapper, 'data-journey-line-color', DEFAULTS.lineColor),
     lineWidth: readNumberAttr(wrapper, 'data-journey-line-width', DEFAULTS.lineWidth),
     storyDuration: readNumberAttr(wrapper, 'data-journey-story-duration', DEFAULTS.storyDuration),
+    drawPathDuration: readNumberAttr(wrapper, 'data-journey-draw-path-duration', DEFAULTS.drawPathDuration),
     transitionDuration: readNumberAttr(wrapper, 'data-journey-transition-duration', DEFAULTS.transitionDuration),
     flyDuration: readNumberAttr(wrapper, 'data-journey-fly-duration', DEFAULTS.flyDuration),
     autoplay: readBoolAttr(wrapper, 'data-journey-autoplay', DEFAULTS.autoplay),
     bezierSamples: DEFAULTS.bezierSamples
   };
+
+  // Clamp: line can't draw slower than the story bar fills.
+  if (opts.drawPathDuration > opts.storyDuration) {
+    opts.drawPathDuration = opts.storyDuration;
+  }
 
   // Default initial active step = the FIRST unlocked step (auto-play starts
   // from the beginning). Designer can override via attribute.
@@ -1100,8 +1125,9 @@ function initInstance(wrapper) {
     steps,
     opts,
     activeOrder: null,
-    progress: {},          // { [order]: 0..1 }
-    animationFrames: {},   // { [order]: rafId }
+    progress: {},          // { [order]: 0..1 } — bar fill
+    lineProgress: {},      // { [order]: 0..1 } — line draw
+    animationFrames: {},   // { [order]: rafId, ['line-'+order]: rafId }
     paused: false,
     visibilityPaused: true,
     pins: [],
@@ -1131,7 +1157,10 @@ function initInstance(wrapper) {
     // Initialise every step's progress to 0 so the data structure exists
     // before the first setActiveStep call writes targets.
     steps.forEach((s) => {
-      if (isStepUnlocked(s)) instance.progress[s.order] = 0;
+      if (isStepUnlocked(s)) {
+        instance.progress[s.order] = 0;
+        instance.lineProgress[s.order] = 0;
+      }
     });
 
     // Apply auto-detected occluder padding BEFORE the first fitBounds so the

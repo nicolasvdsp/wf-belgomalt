@@ -506,6 +506,17 @@ function computeMapPadding(mapContainer, wrapper, basePadding) {
     padding[closest.side] = Math.max(padding[closest.side], closest.value);
   });
 
+  // Clamp: no single side may exceed 50% of the map's dimension on that
+  // axis. Without this, a tall overlay (e.g. content card + nav buttons)
+  // can push the padding so high that Mapbox has no usable viewport left
+  // and flyTo/fitBounds silently break.
+  const maxV = mapRect.height * 0.5;
+  const maxH = mapRect.width * 0.5;
+  padding.top = Math.min(padding.top, maxV);
+  padding.bottom = Math.min(padding.bottom, maxV);
+  padding.left = Math.min(padding.left, maxH);
+  padding.right = Math.min(padding.right, maxH);
+
   return padding;
 }
 
@@ -873,6 +884,12 @@ function nextUnlockedStep(steps, currentOrder) {
     .sort((a, b) => a.order - b.order)[0] || null;
 }
 
+function prevUnlockedStep(steps, currentOrder) {
+  return steps
+    .filter((s) => isStepUnlocked(s) && s.order < currentOrder)
+    .sort((a, b) => b.order - a.order)[0] || null;
+}
+
 function autoAdvance(instance, completedOrder) {
   if (!instance.opts.autoplay) return;
   // Guard against stale callbacks from a step that's no longer active.
@@ -1136,6 +1153,7 @@ function initInstance(wrapper) {
     pinClickHandlers: [],
     segmentClickHandlers: [],
     pauseClickHandlers: [],
+    navClickHandlers: [],
     ro: null,
     destroy: null
   };
@@ -1209,6 +1227,24 @@ function initInstance(wrapper) {
       instance.pauseClickHandlers.push({ element: btn, handler });
     });
 
+    // Next / previous navigation buttons.
+    wrapper.querySelectorAll('[data-journey-nav]').forEach((btn) => {
+      const dir = (btn.getAttribute('data-journey-nav') || '').trim().toLowerCase();
+      if (dir !== 'next' && dir !== 'previous') return;
+      btn.style.cursor = 'pointer';
+      const handler = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (instance.activeOrder == null) return;
+        const target = dir === 'next'
+          ? nextUnlockedStep(instance.steps, instance.activeOrder)
+          : prevUnlockedStep(instance.steps, instance.activeOrder);
+        if (target) setActiveStep(instance, target.order);
+      };
+      btn.addEventListener('click', handler);
+      instance.navClickHandlers.push({ element: btn, handler });
+    });
+
     // Defer auto-play until the component is visible. The observer pauses
     // playback when scrolled out and resumes when scrolled back in.
     instance.io = new IntersectionObserver(
@@ -1251,6 +1287,9 @@ function initInstance(wrapper) {
       element.removeEventListener('click', handler);
     });
     instance.pauseClickHandlers.forEach(({ element, handler }) => {
+      element.removeEventListener('click', handler);
+    });
+    instance.navClickHandlers.forEach(({ element, handler }) => {
       element.removeEventListener('click', handler);
     });
   };

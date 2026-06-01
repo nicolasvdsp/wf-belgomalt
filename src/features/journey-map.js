@@ -872,6 +872,9 @@ function autoAdvance(instance, completedOrder) {
 // from its current value to 1, scaling the remaining duration so the story
 // completes in proportional time. Whether paused during the "reset" or the
 // "play" phase, the resume always plays forwards from where the bar stopped.
+// `paused` = user-initiated (button click). `visibilityPaused` = out of
+// viewport (IntersectionObserver). Both independently freeze the active
+// step's animation; resume only fires when BOTH are false.
 function pauseStory(instance) {
   if (instance.paused || instance.activeOrder == null) return;
   instance.paused = true;
@@ -881,9 +884,37 @@ function pauseStory(instance) {
 
 function resumeStory(instance) {
   if (!instance.paused || instance.activeOrder == null) return;
+  if (instance.visibilityPaused) return;
   instance.paused = false;
   instance.wrapper.setAttribute('data-journey-state', 'playing');
+  resumeActiveStep(instance);
+}
 
+function togglePause(instance) {
+  if (instance.paused) resumeStory(instance);
+  else pauseStory(instance);
+}
+
+function pauseForVisibility(instance) {
+  if (instance.visibilityPaused || instance.activeOrder == null) return;
+  instance.visibilityPaused = true;
+  cancelStepAnimation(instance, instance.activeOrder);
+  if (!instance.paused) {
+    instance.wrapper.setAttribute('data-journey-state', 'paused');
+  }
+}
+
+function resumeFromVisibility(instance) {
+  if (!instance.visibilityPaused) return;
+  instance.visibilityPaused = false;
+  if (instance.paused) return;
+  instance.wrapper.setAttribute('data-journey-state', 'playing');
+  if (instance.activeOrder != null) {
+    resumeActiveStep(instance);
+  }
+}
+
+function resumeActiveStep(instance) {
   const order = instance.activeOrder;
   const current = instance.progress[order] || 0;
   const remainingMs = Math.max(0, instance.opts.storyDuration * (1 - current));
@@ -896,11 +927,6 @@ function resumeStory(instance) {
     easeLinear,
     () => autoAdvance(instance, order)
   );
-}
-
-function togglePause(instance) {
-  if (instance.paused) resumeStory(instance);
-  else pauseStory(instance);
 }
 
 
@@ -961,6 +987,9 @@ function destroyInstance(inst) {
       });
     } catch (_) { /* ignore */ }
     try { inst.map.remove(); } catch (_) { }
+  }
+  if (inst.io) {
+    try { inst.io.disconnect(); } catch (_) { }
   }
   if (inst.ro) {
     try { inst.ro.disconnect(); } catch (_) { }
@@ -1075,6 +1104,7 @@ function initInstance(wrapper) {
     progress: {},          // { [order]: 0..1 }
     animationFrames: {},   // { [order]: rafId }
     paused: false,
+    visibilityPaused: true,
     pins: [],
     progressSegments: [],
     lineSegments: [],
@@ -1151,8 +1181,25 @@ function initInstance(wrapper) {
       instance.pauseClickHandlers.push({ element: btn, handler });
     });
 
-    // Kick off auto-play from the initial active step.
-    setActiveStep(instance, initialActiveOrder);
+    // Defer auto-play until the component is visible. The observer pauses
+    // playback when scrolled out and resumes when scrolled back in.
+    instance.io = new IntersectionObserver(
+      (entries) => {
+        const visible = entries.some((e) => e.isIntersecting);
+        if (visible) {
+          if (instance.activeOrder == null) {
+            instance.visibilityPaused = false;
+            setActiveStep(instance, initialActiveOrder);
+          } else {
+            resumeFromVisibility(instance);
+          }
+        } else {
+          pauseForVisibility(instance);
+        }
+      },
+      { threshold: 0.15 }
+    );
+    instance.io.observe(wrapper);
   });
 
   // Watch BOTH the map container AND the wrapper, since the wrapper's

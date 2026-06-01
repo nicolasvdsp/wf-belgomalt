@@ -954,12 +954,11 @@ function flyToActiveStep(instance, order) {
       essential: true
     });
   } else {
-    // flyTo for the first/only step. Mapbox's persistent padding applies to
-    // the camera centre, so the point lands inside the visible (non-occluded)
-    // portion of the map automatically.
+    // First step (no previous leg) — zoom in to the location so the user
+    // sees a clear focus on the origin before any line starts drawing.
     map.flyTo({
       center: [step.lon, step.lat],
-      zoom: Math.max(7.5, map.getZoom()),
+      zoom: 10,
       duration: opts.flyDuration,
       essential: true
     });

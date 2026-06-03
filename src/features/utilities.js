@@ -39,11 +39,162 @@ function initPaginationPill(container) {
 }
 
 
-// Initialize Dynamic Current Year
+// --------------- Preloader counter accumulation ---------------
+// Uses a delta approach: each source only ever ADDS to the current display
+// value, so it coexists safely with the preloader and quiz animations that
+// also write to the same element.
+
+const counterState = { cleanup: null };
+
+const SCROLL_TOTAL_POINTS = 400;
+const DEFAULT_BUTTON_POINTS = 20;
+
+function getCounterValueEl() {
+  const el = document.querySelector('[data-preloader-counter]');
+  if (!el) return null;
+  return (
+    el.querySelector('[data-preloader-counter-value]') ||
+    Array.from(el.children).find(
+      (c) => c.tagName !== 'SVG' && !c.querySelector('svg')
+    ) ||
+    el
+  );
+}
+
+const counterAnim = { target: 0, tween: null };
+
+const DIGIT_SPAN_STYLE = 'display:inline-block;width:0.6em;text-align:center;';
+
+function ensureDigitSpans(valueEl) {
+  const raw = valueEl.textContent;
+  const hasSpans = valueEl.children.length > 0 &&
+    Array.from(valueEl.children).every((c) => c.tagName === 'SPAN' && c.textContent.length === 1);
+  if (hasSpans) return;
+
+  valueEl.style.fontVariantNumeric = 'tabular-nums';
+  const digits = raw.replace(/\D/g, '') || '0';
+  valueEl.innerHTML = '';
+  for (const ch of digits) {
+    const s = document.createElement('span');
+    s.style.cssText = DIGIT_SPAN_STYLE;
+    s.textContent = ch;
+    valueEl.appendChild(s);
+  }
+}
+
+function setDigitSpans(valueEl, value) {
+  const str = String(value);
+  const spans = Array.from(valueEl.children);
+
+  while (spans.length < str.length) {
+    const s = document.createElement('span');
+    s.style.cssText = DIGIT_SPAN_STYLE;
+    s.textContent = '0';
+    valueEl.insertBefore(s, valueEl.firstChild);
+    spans.unshift(s);
+  }
+  while (spans.length > str.length) {
+    valueEl.removeChild(spans.shift());
+  }
+
+  for (let i = 0; i < str.length; i++) {
+    if (spans[i].textContent !== str[i]) {
+      spans[i].textContent = str[i];
+      gsap.fromTo(spans[i],
+        { yPercent: 30, opacity: 0.3 },
+        { yPercent: 0, opacity: 1, duration: 0.18, ease: 'power2.out', overwrite: true }
+      );
+    }
+  }
+}
+
+function addToCounter(delta) {
+  if (delta <= 0) return;
+  const valueEl = getCounterValueEl();
+  if (!valueEl) return;
+
+  const displayed = parseInt(valueEl.textContent, 10) || 0;
+  const current = Math.max(displayed, counterAnim.target);
+  counterAnim.target = current + delta;
+
+  if (counterAnim.tween) counterAnim.tween.kill();
+
+  ensureDigitSpans(valueEl);
+
+  const proxy = { val: displayed };
+  const distance = counterAnim.target - displayed;
+  const duration = Math.min(1.35 + distance * 0.005, 1.8);
+
+  counterAnim.tween = gsap.to(proxy, {
+    val: counterAnim.target,
+    duration,
+    ease: 'none',
+    onUpdate() {
+      setDigitSpans(valueEl, Math.round(proxy.val));
+    },
+    onComplete() {
+      setDigitSpans(valueEl, counterAnim.target);
+      counterAnim.tween = null;
+    },
+  });
+}
+
+function onButtonClick(e) {
+  const btn = e.currentTarget;
+  const raw = btn.getAttribute('data-counter-add');
+  const amount = (raw !== null && raw !== '') ? (parseInt(raw, 10) || DEFAULT_BUTTON_POINTS) : DEFAULT_BUTTON_POINTS;
+  addToCounter(amount);
+}
+
+function initCounterAccumulation(container) {
+  container = container || document;
+
+  if (counterState.cleanup) {
+    counterState.cleanup();
+  }
+
+  // --- Section-based scroll points (opt-in per page) ---
+  const scrollEnabled = container.querySelector('[data-counter-scroll]');
+  const sections = scrollEnabled
+    ? Array.from(container.querySelectorAll('section:not([data-counter-ignore])'))
+    : [];
+  const sectionCount = sections.length;
+  const pointsPerSection = sectionCount > 0 ? Math.round(SCROLL_TOTAL_POINTS / sectionCount) : 0;
+  const reached = new Set();
+  let observer = null;
+
+  if (sectionCount > 0) {
+    observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          if (reached.has(entry.target)) return;
+          reached.add(entry.target);
+          addToCounter(pointsPerSection);
+        });
+      },
+      { threshold: 0.15 }
+    );
+    sections.forEach((section) => observer.observe(section));
+  }
+
+  // --- Button click points ---
+  const buttons = container.querySelectorAll('[data-counter-add]');
+  buttons.forEach((btn) => btn.addEventListener('click', onButtonClick));
+
+  counterState.cleanup = () => {
+    if (observer) observer.disconnect();
+    buttons.forEach((btn) => btn.removeEventListener('click', onButtonClick));
+    counterState.cleanup = null;
+  };
+}
+
+
 function utilities() {
   document.addEventListener('barba:pageVisible', (e) => {
     initDynamicCurrentYear(e.detail.container);
     initPaginationPill(e.detail.container);
+    initCounterAccumulation(e.detail.container);
   });
 }
 

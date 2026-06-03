@@ -447,7 +447,7 @@ function initGameQuiz(container) {
 
       const startX = gsap.utils.random(0, vw);
       const delay = gsap.utils.random(0, 0.8);
-      const duration = gsap.utils.random(2, 3.5);
+      const duration = gsap.utils.random(1.5, 2.75);
 
       gsap.set(ribbon, {
         top: gsap.utils.random(-30, -80),

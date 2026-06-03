@@ -142,8 +142,53 @@ function addToCounter(delta) {
 function onButtonClick(e) {
   const btn = e.currentTarget;
   const raw = btn.getAttribute('data-counter-add');
-  const amount = (raw !== null && raw !== '') ? (parseInt(raw, 10) || DEFAULT_BUTTON_POINTS) : DEFAULT_BUTTON_POINTS;
+  const parsed = parseInt(raw, 10);
+  const amount = (raw !== null && raw !== '') ? (isNaN(parsed) ? DEFAULT_BUTTON_POINTS : parsed) : DEFAULT_BUTTON_POINTS;
+  if (amount <= 0) return;
+
   addToCounter(amount);
+
+  const group = btn.closest('[data-counter-group]');
+  const siblings = group
+    ? group.querySelectorAll('[data-counter-add]')
+    : [btn];
+  siblings.forEach((b) => b.setAttribute('data-counter-add', '0'));
+}
+
+function syncTotalCounter(el) {
+  const sourceEl = getCounterValueEl();
+  if (!sourceEl) return;
+  const target = parseInt(sourceEl.textContent, 10) || 0;
+  const from = parseInt(el.textContent, 10) || 0;
+  if (target === from) return;
+
+  el.style.fontVariantNumeric = 'tabular-nums';
+
+  const proxy = { val: from };
+  const distance = Math.abs(target - from);
+  const duration = Math.min(0.5 + distance * 0.005, 2);
+
+  // Reuse the same digit-span helpers on this element
+  el.innerHTML = '';
+  const digits = String(from);
+  for (const ch of digits) {
+    const s = document.createElement('span');
+    s.style.cssText = DIGIT_SPAN_STYLE;
+    s.textContent = ch;
+    el.appendChild(s);
+  }
+
+  gsap.to(proxy, {
+    val: target,
+    duration,
+    ease: 'none',
+    onUpdate() {
+      setDigitSpans(el, Math.round(proxy.val));
+    },
+    onComplete() {
+      setDigitSpans(el, target);
+    },
+  });
 }
 
 function initCounterAccumulation(container) {
@@ -182,8 +227,27 @@ function initCounterAccumulation(container) {
   const buttons = container.querySelectorAll('[data-counter-add]');
   buttons.forEach((btn) => btn.addEventListener('click', onButtonClick));
 
+  // --- Mirror counter (data-counter-total) ---
+  const totals = Array.from(container.querySelectorAll('[data-counter-total]'));
+  let totalObserver = null;
+
+  if (totals.length) {
+    totalObserver = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          totalObserver.unobserve(entry.target);
+          syncTotalCounter(entry.target);
+        });
+      },
+      { threshold: 0.15 }
+    );
+    totals.forEach((el) => totalObserver.observe(el));
+  }
+
   counterState.cleanup = () => {
     if (observer) observer.disconnect();
+    if (totalObserver) totalObserver.disconnect();
     buttons.forEach((btn) => btn.removeEventListener('click', onButtonClick));
     counterState.cleanup = null;
   };

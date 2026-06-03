@@ -40,6 +40,8 @@ function initGameQuiz(container) {
   container = container || document;
   const game = container.querySelector(".game-component");
   if (!game) return;
+  if (game.dataset.gameInitialized) return;
+  game.dataset.gameInitialized = "true";
 
   const questionEl = game.querySelector("[data-game-question]");
   const explicationEl = game.querySelector("[data-game-explication]");
@@ -77,6 +79,7 @@ function initGameQuiz(container) {
     progressSegments = QUESTIONS.map((_, i) => {
       const element = progressBarTemplate.cloneNode(true);
       element.setAttribute("data-progress-bar", "");
+      element.removeAttribute("data-reveal-element");
       element.style.setProperty("--progress", "0");
 
       const progressEl = element.querySelector("[data-progress-fill]");
@@ -107,6 +110,18 @@ function initGameQuiz(container) {
       barContainer.insertBefore(seg.element, progressBarTemplate);
     });
     progressBarTemplate.parentNode.removeChild(progressBarTemplate);
+
+    // Reveal progress bars with a stagger
+    const barEls = progressSegments.map((s) => s.element);
+    gsap.set(barEls, { autoAlpha: 0, yPercent: 12.5 });
+    gsap.to(barEls, {
+      autoAlpha: 1,
+      yPercent: 0,
+      stagger: 0.08,
+      duration: 0.8,
+      delay: 0.8,
+      ease: "power2.out",
+    });
   }
 
   function updateProgressBars() {
@@ -186,6 +201,27 @@ function initGameQuiz(container) {
     });
   }
 
+  // --- Explication reveal (height + fade so layout shifts smoothly) ---
+  function revealExplication() {
+    if (!explicationEl) return;
+    gsap.set(explicationEl, { autoAlpha: 0, height: 0, overflow: "hidden" });
+    const naturalHeight = explicationEl.scrollHeight;
+    gsap.to(explicationEl, {
+      height: naturalHeight,
+      duration: 0.5,
+      ease: "power2.out",
+      onComplete() {
+        gsap.set(explicationEl, { height: "auto", overflow: "" });
+      },
+    });
+    gsap.to(explicationEl, {
+      autoAlpha: 1,
+      duration: 0.5,
+      delay: 0.15,
+      ease: "power2.out",
+    });
+  }
+
   // --- Rendering ---
   function renderQuestion() {
     const q = QUESTIONS[currentIndex];
@@ -234,6 +270,7 @@ function initGameQuiz(container) {
     if (explicationEl) {
       explicationEl.textContent = q.explication;
       explicationEl.style.display = "";
+      revealExplication();
     }
 
     // Show one button as the "next question" in full-width mode
@@ -512,6 +549,7 @@ function initGameQuiz(container) {
 
         if (explicationEl) {
           explicationEl.style.display = "";
+          revealExplication();
         }
 
         updateProgressBars();
@@ -536,13 +574,46 @@ function initGameQuiz(container) {
   });
 
   // --- Init ---
+  // Strip reveal attributes — quiz handles its own entrance animations
+  answerButtons.forEach((btn) => btn.removeAttribute("data-reveal-element"));
+
   buildProgressBars();
   updateLives();
   renderQuestion();
+
+  // Unified entrance reveal with 0.8s delay after page-enter
+  const revealDelay = 0.8;
+
+  if (questionEl) {
+    gsap.set(questionEl, { autoAlpha: 0, yPercent: 20 });
+    gsap.to(questionEl, {
+      autoAlpha: 1,
+      yPercent: 0,
+      duration: 0.8,
+      delay: revealDelay,
+      ease: "power2.out",
+    });
+  }
+
+  // Buttons
+  answerButtons.forEach((btn) => {
+    if (btn.style.display !== "none") {
+      gsap.set(btn, { autoAlpha: 0, yPercent: 12.5 });
+    }
+  });
+  const visibleButtons = answerButtons.filter((b) => b.style.display !== "none");
+  gsap.to(visibleButtons, {
+    autoAlpha: 1,
+    yPercent: 0,
+    stagger: 0.1,
+    duration: 1,
+    delay: revealDelay + 0.3,
+    ease: "power2.out",
+  });
 }
 
 function gameQuiz() {
-  document.addEventListener("barba:afterEnter", (e) => {
+  document.addEventListener("barba:pageVisible", (e) => {
     initGameQuiz(e.detail.container);
   });
 }

@@ -1079,6 +1079,10 @@ function initPageTransitions() {
     debug: true, // Set to 'false' in production
     timeout: 7000,
     preventRunning: true,
+    prevent: ({ el }) => {
+      if (el?.hash && el.pathname.replace(/\/$/, '') === window.location.pathname.replace(/\/$/, '')) return true;
+      return !!el?.closest('[data-counter-add]');
+    },
     transitions: [
       { //item to detail page
         name: "item to detail page",

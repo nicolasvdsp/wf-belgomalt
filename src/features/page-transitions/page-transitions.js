@@ -1081,7 +1081,7 @@ function initPageTransitions() {
     preventRunning: true,
     prevent: ({ el }) => {
       if (el?.hash && el.pathname.replace(/\/$/, '') === window.location.pathname.replace(/\/$/, '')) return true;
-      return !!el?.closest('[data-counter-add]');
+      return !!el?.closest('[data-counter-add], [data-anchor-target]');
     },
     transitions: [
       { //item to detail page

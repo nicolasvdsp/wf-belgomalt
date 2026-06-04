@@ -24,6 +24,7 @@ import defrost from './features/defrost';
 import socialProof from './features/social-proof';
 import journeyMap from './features/journey-map';
 import gameQuiz from './features/game-quiz';
+import dialog from './features/dialog';
 
 
 // ============================================
@@ -59,6 +60,7 @@ function runApp() {
     ACTIVE_FEATURES.socialProof && socialProof();
     ACTIVE_FEATURES.journeyMap && journeyMap();
     ACTIVE_FEATURES.gameQuiz && gameQuiz();
+    ACTIVE_FEATURES.dialog && dialog();
   }
 
   if (document.readyState === 'loading') {

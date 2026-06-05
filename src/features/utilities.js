@@ -61,52 +61,10 @@ function getCounterValueEl() {
   );
 }
 
-const counterAnim = { target: 0, tween: null };
+const counterAnim = { target: 0, timer: null };
 
-const DIGIT_SPAN_STYLE = 'display:inline-block;width:0.6em;text-align:center;';
-
-function ensureDigitSpans(valueEl) {
-  const raw = valueEl.textContent;
-  const hasSpans = valueEl.children.length > 0 &&
-    Array.from(valueEl.children).every((c) => c.tagName === 'SPAN' && c.textContent.length === 1);
-  if (hasSpans) return;
-
-  valueEl.style.fontVariantNumeric = 'tabular-nums';
-  const digits = raw.replace(/\D/g, '') || '0';
-  valueEl.innerHTML = '';
-  for (const ch of digits) {
-    const s = document.createElement('span');
-    s.style.cssText = DIGIT_SPAN_STYLE;
-    s.textContent = ch;
-    valueEl.appendChild(s);
-  }
-}
-
-function setDigitSpans(valueEl, value) {
-  const str = String(value);
-  const spans = Array.from(valueEl.children);
-
-  while (spans.length < str.length) {
-    const s = document.createElement('span');
-    s.style.cssText = DIGIT_SPAN_STYLE;
-    s.textContent = '0';
-    valueEl.insertBefore(s, valueEl.firstChild);
-    spans.unshift(s);
-  }
-  while (spans.length > str.length) {
-    valueEl.removeChild(spans.shift());
-  }
-
-  for (let i = 0; i < str.length; i++) {
-    if (spans[i].textContent !== str[i]) {
-      spans[i].textContent = str[i];
-      gsap.fromTo(spans[i],
-        { yPercent: 30, opacity: 0.3 },
-        { yPercent: 0, opacity: 1, duration: 0.18, ease: 'power2.out', overwrite: true }
-      );
-    }
-  }
-}
+const STEPS = 5;
+const STEP_INTERVAL = 80;
 
 function addToCounter(delta) {
   if (delta <= 0) return;
@@ -117,26 +75,23 @@ function addToCounter(delta) {
   const current = Math.max(displayed, counterAnim.target);
   counterAnim.target = current + delta;
 
-  if (counterAnim.tween) counterAnim.tween.kill();
+  if (counterAnim.timer) clearInterval(counterAnim.timer);
 
-  ensureDigitSpans(valueEl);
+  let step = 0;
+  const from = displayed;
+  const to = counterAnim.target;
 
-  const proxy = { val: displayed };
-  const distance = counterAnim.target - displayed;
-  const duration = Math.min(1.35 + distance * 0.005, 1.8);
-
-  counterAnim.tween = gsap.to(proxy, {
-    val: counterAnim.target,
-    duration,
-    ease: 'none',
-    onUpdate() {
-      setDigitSpans(valueEl, Math.round(proxy.val));
-    },
-    onComplete() {
-      setDigitSpans(valueEl, counterAnim.target);
-      counterAnim.tween = null;
-    },
-  });
+  counterAnim.timer = setInterval(() => {
+    step++;
+    if (step >= STEPS) {
+      clearInterval(counterAnim.timer);
+      counterAnim.timer = null;
+      valueEl.textContent = to;
+      return;
+    }
+    const t = step / STEPS;
+    valueEl.textContent = Math.round(from + (to - from) * t);
+  }, STEP_INTERVAL);
 }
 
 function onButtonClick(e) {
@@ -158,37 +113,21 @@ function onButtonClick(e) {
 function syncTotalCounter(el) {
   const sourceEl = getCounterValueEl();
   if (!sourceEl) return;
-  const target = parseInt(sourceEl.textContent, 10) || 0;
+  const to = parseInt(sourceEl.textContent, 10) || 0;
   const from = parseInt(el.textContent, 10) || 0;
-  if (target === from) return;
+  if (to === from) return;
 
-  el.style.fontVariantNumeric = 'tabular-nums';
-
-  const proxy = { val: from };
-  const distance = Math.abs(target - from);
-  const duration = Math.min(0.5 + distance * 0.005, 2);
-
-  // Reuse the same digit-span helpers on this element
-  el.innerHTML = '';
-  const digits = String(from);
-  for (const ch of digits) {
-    const s = document.createElement('span');
-    s.style.cssText = DIGIT_SPAN_STYLE;
-    s.textContent = ch;
-    el.appendChild(s);
-  }
-
-  gsap.to(proxy, {
-    val: target,
-    duration,
-    ease: 'none',
-    onUpdate() {
-      setDigitSpans(el, Math.round(proxy.val));
-    },
-    onComplete() {
-      setDigitSpans(el, target);
-    },
-  });
+  let step = 0;
+  const timer = setInterval(() => {
+    step++;
+    if (step >= STEPS) {
+      clearInterval(timer);
+      el.textContent = to;
+      return;
+    }
+    const t = step / STEPS;
+    el.textContent = Math.round(from + (to - from) * t);
+  }, STEP_INTERVAL);
 }
 
 function initCounterAccumulation(container) {
@@ -199,7 +138,7 @@ function initCounterAccumulation(container) {
   }
 
   // --- Section-based scroll points (opt-in per page) ---
-  const scrollEnabled = container.querySelector('[data-counter-scroll]');
+  const scrollEnabled = container.hasAttribute?.('data-counter-scroll') || container.querySelector('[data-counter-scroll]');
   const sections = scrollEnabled
     ? Array.from(container.querySelectorAll('section:not([data-counter-ignore])'))
     : [];

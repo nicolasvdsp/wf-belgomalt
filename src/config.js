@@ -28,6 +28,7 @@ export const INCLUDE_FEATURES = {
   gameQuiz: true,
   dialog: true,
   bunnyBackground: true,
+  bunnyStories: true,
   // Add more features as you create them:
   // cursor: false,
   // etc.

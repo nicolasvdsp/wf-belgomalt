@@ -1,0 +1,39 @@
+// Set on the progress-bar list container by JS — useful for grid layouts
+// like `grid-template-columns: repeat(var(--story-count), 1fr)`.
+[data-stories-player] [data-progress-bar] {
+  --story-count: 1;
+}
+
+// ---------- Mirror of the bunny-background state CSS ----------
+
+// Animation
+[data-stories-player] :is(.bunny-bg__placeholder, .bunny-bg__loading) {
+  transition: opacity 0.3s linear, visibility 0.3s linear;
+}
+
+// Placeholder — hide once the first frame is on screen.
+[data-stories-player][data-player-status="playing"] .bunny-bg__placeholder,
+[data-stories-player][data-player-status="paused"] .bunny-bg__placeholder,
+[data-stories-player][data-player-activated="true"][data-player-status="ready"] .bunny-bg__placeholder {
+  opacity: 0;
+  visibility: hidden;
+}
+
+// Play / Pause — hide whichever icon doesn't match the next available action.
+[data-stories-player][data-player-status="playing"] [data-icon-playstate="play"],
+[data-stories-player][data-player-status="loading"] [data-icon-playstate="play"],
+[data-stories-player][data-player-status="paused"] [data-icon-playstate="pause"] {
+  display: none;
+}
+
+// Mute / Unmute — icon shown reflects the current state.
+[data-stories-player][data-player-muted="true"] [data-icon-mutestate="unmute"],
+[data-stories-player][data-player-muted="false"] [data-icon-mutestate="mute"] {
+  display: none;
+}
+
+// Loading spinner — shown while buffering / switching stories.
+[data-stories-player][data-player-status="loading"] .bunny-bg__loading {
+  opacity: 1;
+  visibility: visible;
+}

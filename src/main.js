@@ -26,6 +26,7 @@ import journeyMap from './features/journey-map';
 import gameQuiz from './features/game-quiz';
 import dialog from './features/dialog';
 import bunnyBackground from './features/videos/bunny-background';
+import bunnyStories from './features/videos/bunny-stories';
 
 // ============================================
 // START
@@ -62,6 +63,7 @@ function runApp() {
     ACTIVE_FEATURES.gameQuiz && gameQuiz();
     ACTIVE_FEATURES.dialog && dialog();
     ACTIVE_FEATURES.bunnyBackground && bunnyBackground();
+    ACTIVE_FEATURES.bunnyStories && bunnyStories();
   }
 
   if (document.readyState === 'loading') {

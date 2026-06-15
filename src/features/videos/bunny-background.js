@@ -1,6 +1,11 @@
 function initBunnyPlayerBackground(container) {
   container = container || document;
   container.querySelectorAll('[data-bunny-background-init]').forEach(function (player) {
+    // Stories viewer owns its own playback lifecycle — skip any bunny-bg
+    // sitting inside [data-stories-init] so we don't double-init the same
+    // <video> from two features.
+    if (player.closest('[data-stories-init]')) return;
+
     var src = player.getAttribute('data-player-src');
     if (!src) return;
 

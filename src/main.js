@@ -25,7 +25,7 @@ import socialProof from './features/social-proof';
 import journeyMap from './features/journey-map';
 import gameQuiz from './features/game-quiz';
 import dialog from './features/dialog';
-
+import bunnyBackground from './features/videos/bunny-background';
 
 // ============================================
 // START
@@ -61,6 +61,7 @@ function runApp() {
     ACTIVE_FEATURES.journeyMap && journeyMap();
     ACTIVE_FEATURES.gameQuiz && gameQuiz();
     ACTIVE_FEATURES.dialog && dialog();
+    ACTIVE_FEATURES.bunnyBackground && bunnyBackground();
   }
 
   if (document.readyState === 'loading') {

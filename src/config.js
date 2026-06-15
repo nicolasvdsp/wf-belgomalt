@@ -27,6 +27,7 @@ export const INCLUDE_FEATURES = {
   journeyMap: true,
   gameQuiz: true,
   dialog: true,
+  bunnyBackground: true,
   // Add more features as you create them:
   // cursor: false,
   // etc.

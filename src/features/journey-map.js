@@ -1216,7 +1216,7 @@ function initInstance(wrapper) {
     // (so the visible icon is always the action you can take next). We wire
     // every icon as a click target; togglePause flips the state regardless
     // of which icon was clicked.
-    wrapper.querySelectorAll('[data-icon-playstate]').forEach((btn) => {
+    wrapper.querySelectorAll('[data-icon-playstate-wrapper]').forEach((btn) => {
       btn.style.cursor = 'pointer';
       const handler = (e) => {
         e.preventDefault();

@@ -88,8 +88,43 @@
 }
 
 [data-journey-state="playing"] [data-icon-playstate="play"],
-[data-journey-state="paused"]  [data-icon-playstate="pause"] {
+[data-journey-state="paused"] [data-icon-playstate="pause"] {
   display: none;
+}
+
+
+[data-journey-overlay-error] {
+  min-height: 1.25em;
+  color: #ff6b6b;
+  font-size: 0.875rem;
+  text-align: center;
+  margin-top: 0.75rem;
+
+  &:empty {
+    visibility: hidden;
+  }
+}
+
+// 4-digit date input boxes (MM / YY).
+// Structure: form > .unlock_input-wrapper (×4) + .unlock_separator
+// Each .unlock_input-wrapper holds a visually-hidden label + the digit input.
+
+
+
+.unlock_input {
+  caret-color: transparent;
+  -moz-appearance: textfield;
+
+  &::-webkit-outer-spin-button,
+  &::-webkit-inner-spin-button {
+    appearance: none;
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  &:focus {
+    border-color: rgba(255, 255, 255, 0.6);
+  }
 }
 
 // Mapbox attribution — keep visible (TOS), tone down for dark UI.

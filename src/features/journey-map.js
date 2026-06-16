@@ -9,11 +9,11 @@
 // smoothly undraws the lines (and drains the bars) of any newly-future
 // steps.
 //
-// PHASE STATUS (current: phase 3 — playback)
+// PHASE STATUS (current: phase 4 — unlock overlay)
 //   Phase 1 ✅  map init, pins, polyline with bezier fallback, dark style.
 //   Phase 2 ✅  progress bar, content card, click navigation, locked %.
 //   Phase 3 ✅  auto-play, per-step progress, draw/undraw on navigation.
-//   Phase 4 ⏳  unlock modal + journey-unlock netlify fn.
+//   Phase 4 ✅  unlock overlay + journey-unlock netlify fn.
 //   Phase 5 ⏳  CMS wiring + sync worker emitting precomputed polylines.
 //
 // ────────────────────────────────────────────────────────────────────────────
@@ -47,7 +47,29 @@
 // ────────────────────────────────────────────────────────────────────────────
 // MARKUP CONTRACT — read inside `[data-journey-init]`. Optional unless noted.
 //
-//   <section data-journey-init data-journey-data='{"v":1,"steps":[…]}'>
+//   <section data-journey-init data-journey-beer-slug="pilsen"
+//            data-journey-data='{"v":1,"steps":[…]}'>
+//
+//     <!-- UNLOCK OVERLAY (optional — gates the entire map) -->
+//     <!-- When present, the map is NOT initialised until the user enters a
+//          valid expiry date. JS toggles between step 1 and step 2 via
+//          display toggling on [data-journey-unlock-step]. -->
+//     <div data-journey-overlay class="geography_overlay">
+//       <div data-journey-unlock-step="1">
+//         <!-- hero, heading, copy -->
+//         <a class="ui-button">Start</a>
+//       </div>
+//       <div data-journey-unlock-step="2" style="display:none">
+//         <div class="unlock_input-wrapper">
+//           <input data-journey-date-digit="1" inputmode="numeric" maxlength="1">
+//           <input data-journey-date-digit="2" inputmode="numeric" maxlength="1">
+//           <!-- "/" separator -->
+//           <input data-journey-date-digit="3" inputmode="numeric" maxlength="1">
+//           <input data-journey-date-digit="4" inputmode="numeric" maxlength="1">
+//         </div>
+//         <div data-journey-overlay-error></div>
+//       </div>
+//     </div>
 //
 //     <div data-journey-map></div>                  (required) Mapbox canvas
 //
@@ -77,11 +99,6 @@
 //     <img data-journey-content="image">
 //     <div data-journey-content="name"></div>
 //     <a   data-journey-content="link"></a>
-//
-//     <footer>
-//       <span   data-journey-locked-count></span>   "40% data is locked"
-//       <button data-journey-unlock></button>       (phase 4 wires the modal)
-//     </footer>
 //
 //   </section>
 //
@@ -150,9 +167,10 @@ const DEFAULTS = {
   cooperativeGestures: false
 };
 
-// Fixture rendered when no `data-journey-data` is provided. Five steps with
-// three unlocked + two locked = "40% data is locked", matching the Figma
-// reference so we can demo phase 3 + 4 against realistic data.
+// Fixture rendered when no `data-journey-data` is provided and no unlock
+// overlay is present. All steps are fully populated for demo purposes.
+// FIXTURE_DATE is the MM/YY that unlocks the fixture in demo mode (no slug).
+const FIXTURE_DATE = '06/27';
 const FIXTURE_FALLBACK = {
   v: 1,
   steps: [
@@ -165,35 +183,43 @@ const FIXTURE_FALLBACK = {
       learnMoreUrl: '#',
       lat: 50.2929,
       lon: 5.0944, // Ciney
-      // Ciney → Namur (31.1 km driving) — Mapbox Directions API polyline.
-      lineToNext: 'wz}qHe}a^KSS]OWq@oACEGMIMU[KSWc@mA{BkAyBEIGKy@yAwAgCGKIMo@kAq@mAIOGE][]UUOk@e@eA}@_@[OKQMAECECCEAO[m@cAO[KUIQEMEe@k@?S?C?S?wB@}@?wBDc@Dk@PODGBIDMFiDfBc@V[Ne@LQAGGIEIAGBIHGLCPSXKHQPMLGB??k@ZgDdBwAt@gGbDgGbDcBx@a@DSBg@?m@KcB_@o@OyBg@c@K_@Ky@[qBw@eGwBeBm@iBi@{FmByC}@qF}AsJiCoEeA}A[a@I[IcBa@}AYuE}@q@MUEkAUUEaAOaGaAIA}AWaDe@cDe@cBIqAEwA@cBHw@H_@BaAHi@DwBTE?e@DM\\Sj@a@pA]bA_@pA_@lA_@zAMh@Mh@c@bBUx@c@nAQh@y@bBaEvJeEjJq@vAy@hBe@`AoBbEyBnE}FhLkC~EmC~EwEnIgBzCiBxCi@`AYb@sErH_AvAoInMe@t@}KvOkBhC}ApBwGtIuGnIgJnLoDrEkChDuAdBY\\g@p@cCxC_GrHiDrEkGrIsDtF{@tACBeDpFoAvBqA~BeB`D]r@a@v@kEvIaEbJoF~MqBpFmBtFe@vAyB`HCFKZGTELENqCtJeApD_@rASr@}AnFg@fBmIzYi@lB_GpS}ArFyB|H[fAcI`YoB~GuEfP{DpNqBtHqBvHkBxHiBzHi@`CkCxLwBfKy@~DA@WnAy@bEMl@On@e@bC[vAy@dEABwEfUwDfRq@~CUhA_@bByAdFe@rAsAlD}AdDw@xAqDjGaEbH_@n@qBhDw@rAMTiCpEkCrEoBpD}@~Am@bA}DjHE@QDqDrFsApBiCnDy@jAeChDaBxBsA`BkBpBkAlAo@l@a@^cG~EYPu@~@aHvFmC~BuDnDqCvCyCdD}CtD}CzDqC`EkCfE_DpFmBvDoBpE}BvFkBrFwA|EyAlFoDdN{AfF_B`FiBxEuBtEyBxDeCvDiCdD_DfDkC~BaDxBuAv@mAr@{CxAiDnA_DhAkD`AcDx@cDr@iDv@oMrCiCj@iTvE_JxBoDbAoDjAkDpA}CpAiD~AkDfB{Az@wBpAuBnAaDvBcD~B}C`C}CdCqR|O}HlG_F|DsHxFwIhGaAp@cC~AiDxBeEjC_@RoG|DyHvE_E`C_EbC}EvCkDrBm[jR_@Ts]pSoAt@}EpCc@?i@Pg@H_@@_@EWM[QW]]m@Ys@SYWQc@Oa@Ba@NYTe@~@Q^UZO@I@UIEUKOMIOCMBMJKPCLCN?T@NDNJTJHJDJ?LE^\\LNrA|BdChEJLJZFZB^FZHPJHNBLCLNHHJNh@|@vKpQ~@~A@BD\\HZ?BBLFH@?RXRLRTPVfAfBtDjGvA|BdBhCFJfAbBZ\\dF|HZl@h@jA`@bA\\bA`@vAf@xBTxAPjABNJ~@L`ALhA^tDDb@NdBRdCJ`BNbDFlBFhBFpBFfBBr@D|AHlC@VCXE`@GHGLCN?N@PDLFLLHDTDN@FDz@XlK?NB`AB`ADrB@H@x@JjDAzADfBBt@@V??Bv@@f@?L?DAVETa@v@e@fAYp@m@|BSt@CFi@lBIh@Sv@ELa@rA]jAQn@[lAI^ADI\\Kn@k@rCSrAG^S|AM~AGl@O~AI`@Gh@MtAEh@Cx@?dA?z@?P@n@Bf@HpADd@LzDJlDDf@L`AJb@V`ABFB@H?HEJMHMNiANiARmAD]Fm@Jm@BU@GRiB\\mDBMH{@'
+      // Ciney → Cultivae (50.5 km driving)
+      lineToNext: 'wz}qHe}a^KSS]OWq@oACEGMIMU[KSWc@mA{BkAyBEIGKy@yAwAgCGKIMo@kAq@mAIOGE][]UUOk@e@eA}@_@[OKQMAECECCEAO[m@cAO[KUIQEMEe@k@?S?C?S?wB@}@?wBDc@Dk@PODGBIDMFiDfBc@V[Ne@LQAGGIEIAGBIHGLCPSXKHQPMLGB??k@ZgDdBwAt@gGbDgGbDcBx@a@DSBg@?m@KcB_@o@OyBg@c@K_@Ky@[qBw@eGwBeBm@iBi@{FmByC}@qF}AsJiCoEeA}A[a@I[IcBa@}AYuE}@q@MUEkAUUEaAOaGaAIA}AWaDe@cDe@cBIqAEwA@cBHw@H_@BaAHi@DwBTE?e@DM\\Sj@a@pA]bA_@pA_@lA_@zAMh@Mh@c@bBUx@c@nAQh@y@bBaEvJeEjJq@vAy@hBe@`AoBbEyBnE}FhLkC~EmC~EwEnIgBzCiBxCi@`AYb@sErH_AvAoInMe@t@}KvOkBhC}ApBwGtIuGnIgJnLoDrEkChDuAdBY\\g@p@cCxC_GrHiDrEkGrIsDtF{@tACBeDpFoAvBqA~BeB`D]r@a@v@kEvIaEbJoF~MqBpFmBtFe@vAyB`HCFKZGTELENqCtJeApD_@rASr@}AnFg@fBmIzYi@lB_GpS}ArFyB|H[fAcI`YoB~GuEfP{DpNqBtHqBvHkBxHiBzHi@`CkCxLwBfKy@~DA@WnAy@bEMl@On@e@bC[vAy@dEABwEfUwDfRq@~CUhA_@bByAdFe@rAsAlD}AdDw@xAqDjGaEbH_@n@qBhDw@rAMTiCpEkCrEoBpD}@~Am@bA}DjHE@QDqDrFsApBiCnDy@jAeChDaBxBsA`BkBpBkAlAo@l@a@^cG~EYPu@~@aHvFmC~BuDnDqCvCyCdD}CtD}CzDqC`EkCfE_DpFmBvDoBpE}BvFkBrFwA|EyAlFoDdN{AfF_B`FiBxEuBtEyBxDeCvDiCdD_DfDkC~BaDxBuAv@mAr@{CxAiDnA_DhAkD`AcDx@cDr@iDv@oMrCiCj@iTvE_JxBoDbAoDjAkDpA}CpAiD~AkDfB{Az@wBpAuBnAaDvBcD~B}C`C}CdCqR|O}HlG_F|DsHxFwIhGaAp@cC~AiDxBeEjC_@RoG|DyHvE_E`C_EbC}EvCkDrBm[jR_@Ts]pSoAt@}EpC_FvCeNhIqCdB{FhDqElC}OvJaErCmEbDeGbFuAlAqDhD_F~EuGxGwJ`K}HdI}G~GuGlGgCxB_DjCgBvAwCtBmBrAu@d@}@j@cBdAmBdAuBhA{BhAsB`A}B`AmBt@kBp@}E`ByDhAaCn@}Bh@_Ez@wB`@{B`@mF~@kGdAoLnBuGjAkBXw@Ly@NsATsU|DaHhAcEv@oFfA}Ct@iD|@cDbAgA\\aC|@kCdAyCvA}BjAqBhA}A~@iChBeCfB}BjBeCvB}BxBqBtBaChCqBbCyBpCmBlCsB|CoB|CsBhDmBfDgB~CgBfDoEnIo^ds@_DfGqCpFaItO_GbLmA|Bg@~@oNjXyG`MyCnFuGbLgB~CqF|IkFnIwBhDeHrKuNvSqHdKsJfM}HxJ_KxLeKlLeK`LqKzKwKtK{KlK_LrKwKpKuGtGiGnGiGzGiG~GcG|GgFdGgI~JiEpFwFnH_C`DoHzJgJjMszA`tB{P|UsHjK}@j@y@v@s@TWDYCSIOMOSOYKa@Ea@AU?A?[@]B]Fc@Le@Z}@N[HBJAFCFODOAOAQEMIGICmD{E_@c@yAkB_@g@k@y@sAkBcAuAmFsHkEgGmBmCIM{@kAu@eAW_@oLiPEGcGmIoKcO}@mAOUyDoF??UYM[CGKO[i@?C?C?EACACACAAAAAAAAC?C?A?OOMOOUKCEES[SWOS_CcDkCuD]e@CEoG_JqKeOlAcEHSxAiER_@LITCv@P|@Jn@PAi@AkAe@gA?KtD{IGM_O{YwC_G'
     },
     {
       order: 2,
-      title: 'Malted in the heart of Wallonia.',
-      story: '<p>The grain is delivered to a regional maltster, who turns it into the malt that gives this beer its character.</p>',
-      quote: 'Malting is the alchemy that wakes the grain up.',
-      author: { name: 'Pierre Devos', avatar: '' },
+      title: 'Gathered at the cooperative.',
+      story: '<p>The harvest is pooled at a local cooperative that coordinates between farmers and the malting house.</p>',
+      quote: 'We bridge the gap between field and factory.',
+      author: { name: 'Cultivae', avatar: '' },
       learnMoreUrl: '#',
-      lat: 50.4674,
-      lon: 4.8674, // Namur
-      // Namur → Liège (64.3 km driving) — Mapbox Directions API polyline.
-      lineToNext: 'i}_sHwtu\\NsALsABSBYb@aEDS@GDMb@gBTq@BGHMO[Wg@a@w@O[OWIOO[KUqB{DCCOOH]@EH_@ZmAPo@\\kA`@sADMRw@T]d@}ABG@CLc@Ng@r@}BFSXq@Xi@Na@FKNYNM@c@?AASAU?GQkFKkCMqD?GAUC_A?WAO?IW_JQuF?E?WB]BKBM@MAMAMEKGIC]Cc@GiBUwHE}AGsBKaCUiEGgAQmB_@qESmBUuBS}AAG?AIm@SeAUcACOg@kBUu@Uy@u@iBi@kAUa@g@{@}@wA_AyAyBiDwBkD[e@k@aA]i@s@kA_C{DYe@SYU[U[We@Ye@S]AC@SG[IM?GCGCGEAC?ISUOa@e@eAeBeAiBaCaEQWsA}BS_@{@wAIUKY@Q?OCWGSEGGGMCQAOCKIU[gCgEiB}CK]B]C[EUKOMIOCMBMJKPCLCN?T@NDNJTJHJ^DV?d@Et@Ef@Mr@Qr@Un@Uh@OTGFY\\e@^Sn@{FhDqElC}OvJaErCmEbDeGbFuAlAqDhD_F~EuGxGwJ`K}HdI}G~GuGlGgCxB_DjCgBvAwCtBmBrAu@d@}@j@cBdAmBdAuBhA{BhAsB`A}B`AmBt@kBp@}E`ByDhAaCn@}Bh@_Ez@wAFo@DuARcBT_C^}Er@uC`@cJ|Ao@R{AV_G`Aq@J_APsAR_@D[Dy@Ao@Ik@Se@[c@_@c@g@]o@Wm@Um@Qo@Mq@Im@Iq@K}@IaAIgAi@kFSaEO}DGgBIoCKqDIsDEoCIuFIwFEyFC{FE{JEgJQ{f@C}CAuCG}FE}BKaEMkEQwDKoBKkB[mEc@kFa@mEg@iEc@kDk@eEq@aEk@aDm@_De@}Bg@}BuAyFeAyDkA}DgAkDcBaFeBaFgBgFuAmEuA{EoAyEuA_Gc@sBc@}By@mEs@iEm@iEq@kFe@qEc@kESkCQcCQmCM_CQsDO_EGiBI{DGeDCmCAaF@mD@aCDeEH{DJwDNiEToETqDPgCVqD^oEZmD^}D~@qJZuCJkA|@kI^uDp@{Gh@oFj@iGl@_H`@oF\\aFT}EToEDgAJeDJwCHoDNmJDaI?iIEkGI_GGyDKkDMsDM{CMuCWsEUeEYaEk@uHm@yHe@qFi@kGsCs\\i@eGq@yH[yDi@sG]eFMeBc@cIM}CKwCKwDKuEEmFEuE?sD@cDBmDLmIvFmfDf@aXFwDh@}Z^gTvCsfBXySJoIDiI?sICuIMoIWmIa@cJk@mIs@mI_AiIkAgIuA_IyAkHkBqHqBiHyBaHaC}GkC{GgHoPaE_JmWqj@gDgHe@cA_CcFwIcR_EqIa@{@cJ{ReHiOaHeOgHqO_FoKcAuBcHiOaH_OaAwBaFsKcHaOwGsNiC{FiC_GaCiGcAkC{@eCw@}Bq@yBs@_CwAkFkM_j@aHaZeMwi@iBkHmBkHqBiHsBcHwB}GyByG}FkP_G_PgEcLkDoJgC}GmG{PeCyGw@}BeEeLaDiJmD}KkBkGsA_F}@kDk@}B_BgH}AuHqAwHoA}HeAyH}@}Hy@gIq@kIk@uIe@oI_@qIYeJYkJSiIe@iTgAei@a@cSYkMSsKiBs{@_@aR}Ey`Ce@iRa@iK]iI{@uN{@wK_@mDk@sFgA{Ic@}C{@oF{@kFwAoH{AoH}AaHeBoHeBaH_Lic@oOam@kM_g@{BuIuBgIaBqGiBkH{AiGoBgJuBiKoAaHyAgJmAmIu@qF_ZafCw@oHm@cIa@mHQyDkAkY[mHWeH{Bgi@i@eLOoCQqCq@}Hw@uHcAsHgAkHsAkH{AcHcBuGgBiGmEeNiDmKqEgNk[aaAyFgQgZe~@aHaT}@gCqAoDoAyCoAwC{CwG{F_L_B_DyEgJ{HgO{CaGiAwBoAqCuByEgHgQsA_DeBiEeCgGaCyFcE}JaLiXkDuI_EwJuBcFgAcCkA}Bu@mAy@mAw@eA_AgAcAcAaA{@aAu@k@_AaAm@s@c@uBiAq@]s@c@w@o@o@q@m@u@i@{@g@aAc@gAa@oA[mAWsASwAOwAI}AEyAEoCCcCEwJ?uFBgBH_BJsAXyBX{Ab@aB`@iA^_A`AqBj@iA~CsG`A_Cd@qAJ_ARk@Na@bAcD|@uDt@yDTyAVgB`@uDXkDLsCJiCFcCT{LBcB^kT^yTJmDFkBHuAPeCJkATyBX{Bf@yCRmAl@_DbDqPtAiHh@gCf@wBd@iBl@uBb@oAz@{B|@qBp@uArA_CvAwBtEoGfB}BrGoJj@aAdBwCf@}@`@s@n@qAn@uAdAwBvB}E~ByF~AcE`AeClC}G`D}I`CiHx@{BXm@N_@n@kAtAqB\\a@d@i@z@w@dD}C|@y@`AaAZM\\Yh@e@vBkBRMr@e@r@c@bB_AdCwATOVKb@MbAKn@GVCFCDCDGDEDIBIBK@M@KAQCSIi@AIGa@CQAE?ICMAGGq@G}@C{@CcCEaC?]a@}MO{D@[D[FQ@GNUPOb@E|@SRF~@]z@a@bBgANIHQDI@K?C@K?ICI?AAGAAEMMK[QY[YQsAo@s@UWGe@Mg@M_@Eg@CWOGICICQASHyB@[@QBk@@]@_@B[?G?GH_BTsF'
+      lat: 50.644026,
+      lon: 4.797971, // Cultivae
+      // Cultivae → Boortmalt Herent (42.3 km driving)
+      lineToNext: 'gibtHsfh\\iBsD_CyEeBiDYq@{CdBuA~@kAxAsA~Ac@bA_BzC}C~FiBxEcLaPaE{F_Q_Va^ig@_FaHcE{FmVg]uC}DIM_Zya@_@w@Ia@@SCSEMIMCCQCODINGPAV@JA@MNMRi@l@qLjKyPhOqJtIiAfACBqSxQgCzByAtAqAjAuDfDCB}@x@wMnLi@d@s@n@aA|@UP_EpDi@f@MJIF??eDxCoAhA{@v@yDjDQPONsCjCEDe@`@}EfEEBML_Az@_BvAcCvBuChCwChCqG|FuAnAiCzBaBzAeBpAeKhHgM|IgM~IeD|BGD_DxB}HrFoE|CmE`D{AbAqLnIk@`@uJzGWNyA`AkBjAm`@|VwH`FmG|DaWbPa@Vk@\\iU`OoCpB_AdACB_B`CMPA@iDbFsMpRgBhCq@`AYb@Ub@ABu@`Bu@rBk@tBQt@Or@Gb@OpAKrAIpAGnAC`AAdA?xABzADpAPtEF`BDlB@|@?bA?~@E~AEpAG`AKxAMnAQvAUtAYxAWdAWbA[dA[z@Yv@Yn@_@v@_@r@]h@k@z@e@l@c@d@g@h@q@j@i@b@{@f@u@`@k@Tq@Ts@Pq@NiTjDqBXwB\\kN|BqAPqBj@iBx@k@ZeAt@{@r@u@p@y@bAyArB{AxBqAjBuW|_@sExGqCfEqC~DmDfFe@r@aPvUgBpCqAdBmKnOaAvAaAjAQRg@h@KJoBjBGFqJnJm@l@mEjEi@l@kAhAq@n@aB~AgCbCu@r@uBpBg@f@QNWVYTCBILGDE@GDEHCJOLIHUJo@b@aAj@cDlBy@f@UPa@XYPWNe@VaCrAkBlAgBdA}@j@m@\\qAv@e@Ta@Pk@TSFI@s@PcAPyJdBYDo@Le@Hk@JWFkAR}TbEyQlDgAPk@HSDmDh@gI|AsB`@mCd@iCh@iARmI|Ag\\lGE@c@HcARu@NWDSDUDk@J{@PiM`CyMjCq@LoJdBSDaLvBeHrAiB^A?A???G@eF`AwAPq@HI@g@J_@FMBA?s@L]FaDn@{@Nm@Ho@Hi@Bi@@UCy@Em@GYGYGWIMGUEEAMEu@[]OWQYOu@c@e@UyPeJkH{DqEcCyAy@aAm@cAq@oA_Aa@[kAcAiAgAQQs@s@yA}AeEsEcEkEsDuDc@a@GIm@o@_AcAy@{@e@i@sCyCeFmEYU{CuBw@i@{@q@_B}@aAm@mCgBKOIS@SAQEQGMGGGAE?M@IHGLCNAN@NBNDLFHFpBPlFNxF@b@B`C@bCGnFJt@w@p]]|NGtBqA|l@ErB[~M]dMYvH]tHy@lMi@lHiAbMwAbM_BjLeAdH_BvJW|A{BlNi@dD??_ExVCL??cCdOo@xD}Ijj@oBtL_A|F]r@G^Ib@w@lEYpAKt@o@jEm@dEKj@a@nC[|A]hAc@`Ai@`Aq@x@i@d@w@b@eCpAc@Pc@Ng@Fg@Ba@Cg@Is@YQIy@i@SEiBeByAyAWYWYiAmAmD}Du@y@y@_AcBkBmAqAcA_AaDoDyAcBgAoAaHsHcAkAuBaBy@k@uAu@eBs@}Ak@cBe@kAYmEgAoBo@s@WqAq@yA{@_BmAuAqAs@u@eAsAmAeBk@aAOWu@wAq@{AkAoCi@eBcAsD{BiJ_@cBoAkFi@wBm@uBQk@s@qBc@eAQe@s@}AkAwBsA_CiBeCs@{@aAiA_C_CcCwBcBsAgBoAmEaDyAcA{IgG_DcCyBsBeBuBcB_CkAsBs@sAy@aBg@sAEKq@eBo@mBqAiEeBqGoAqECe@q@qCc@kCsBiMIUESGa@CQAa@EFe@`@k@f@e@`@_@^MNWT[ZOPq@~@IJq@dAU`@OVENUb@eCpEiApBs@tASVoA|Bm@dAqA|BS^S\\S^CBCPOXOVCDIPU^EJc@t@WVg@z@GHSXQTSZm@ZWJURi@f@WXEDCBINSNy@\\y@Z[H[Di@Js@D{ENcBDoABy@DgFNcHPa@BYD]FYFm@NQFMD_@Na@T]RQJq@f@m@d@c@`@g@l@QTOXa@GWE??k@GkC]}ASwB[OKOM[u@{AaEQo@o@mDCGMi@Ka@g@oA{@kBkBcDy@sA}BeD}EiGa@i@KOW[A?EEBK?KAKEIEEGAGBEFCFAFAH@HBFBFDBD@AJ?@GXAB_@~@a@p@UVWZ_@b@u@t@[`@aBlByAbBm@p@eArAWXCBIJMLMJYPYLODoBTm@JOBI@mAN}@LgBTOAYC]EQAALAVABELINENQj@w@jCEVERCb@CZK|AETKP[\\MPEPIZYfD??CN?@Gt@OCsZ}Ay@EMCUMS_@Mq@[oBCOCSYeBF_@L_@Rg@?MSm@'
     },
     {
       order: 3,
-      title: 'Brewed within a few hours of the field.',
-      story: '<p>From malt to mash to fermentation, every batch is brewed locally — never further than a short truck ride from the barley.</p>',
-      quote: 'A beer should taste of the land it comes from.',
-      author: { name: 'Sophie Bernard', avatar: '' },
+      title: 'Malted in the heart of Belgium.',
+      story: '<p>The grain is transformed into malt at one of the oldest malteries in the country.</p>',
+      quote: 'Malting is the alchemy that wakes the grain up.',
+      author: { name: 'Boortmalt', avatar: '' },
       learnMoreUrl: '#',
-      lat: 50.6326,
-      lon: 5.5734 // Liège
+      lat: 50.928777,
+      lon: 4.680181, // Boortmalt Herent
+      // Boortmalt Herent → Brouwerij Huyghe (79.2 km driving)
+      lineToNext: 'gczuHw}p[Rl@?LSf@M^G^XdBBRBNZnBLp@R^TLLBx@DrZ|ANBFu@?ABO??XgDH[DQLQZ]JQDUJ}AB[Bc@DSDWv@kCPk@DOHODM@C@W@MP@\\DXBN@fBU|@MlAOHANCl@KnBUNEXMXQLKLMHKBCVYdAsAl@q@xAcB`BmBZa@t@u@^c@V[TW`@q@^_A@CFY?A@KFADEBGDD@?VZJN`@h@|EhG|BdDx@rAjBbDz@jBf@nAJ`@Lh@BFn@lDPn@zA`EZt@NLNJvBZ|ARjC\\j@F??VD`@Fd@[HIl@s@VWPOVU\\WTOPKXQb@U`@Q`AY\\I^IZE^Ef@CfISjAEnACx@CnAA|DM`CGXC^EbAOPETGl@Ur@WHAXGRIROBCd@e@JINQn@w@DGDITYd@m@DKh@{@Nc@b@u@DKT_@HQBENWNYJGbEkHBGJSv@_BN]r@uAhAqBdCqETc@LCb@u@d@w@V[LMPUJIHKLMVURAF@B@HBJD`GxNL^p@hBV\\vAjFdBlGrAlEj@dBv@tBj@vAv@`Bv@zApAvBzAvBlAxAxCtC|CbCzIhGzAbAjE|CdBpAdBrAzBpB|@v@nArAj@l@`AnAfBdCrAtBhAxBr@zAdAlCt@`Ch@fBl@bCrAvFh@zBnAvFx@`Dh@bBl@jBz@xBf@nA~@jBdAjBlA`BlAzAp@t@tAlA~AnAzA|@pAn@v@ZpBn@`Bb@dBb@JBfDx@|Aj@v@Zj@VtBlA\\Rt@n@xBnBzDfEzDnEpBdCzCjDfGdHpCbDvAlBx@dAl@x@X`@Nb@V`@PVNXRZR\\NZNVBDR^NZVl@Xn@Zz@L^L\\DPVx@HZDNDLJ`@VlARx@Z~AX~AZbBZbBJl@Hl@Lp@Hl@Ht@DZDd@BRFx@Bf@Dv@@l@@bA@jA?\\?f@Az@Cx@GtAGvAI|AE|@G|@MxBWrDMbCWvEI~AEt@OnB?N?j@}Dbk@KvAoCb`@o@~Iw@`Lk@dIcBrUiBxT{WntCcBjRy@|Jm@pHs@`Jm@rIk@xIc@~H[tFg@tKG|A[rHO`FSdGWbKQ~HOlJWnZEhNEvRAfF?rUEhpBAzY?zX?xK?jUApW?~q@A~S?rK?xI@tYHfUDdCB~B?DS|CIdBOnBw@nH_AvHKz@WvBo@xE[~AS~@WjAUt@]z@]t@]n@i@t@k@t@IHc@f@_@ZCFYb@IF}ExCcF|C_Aj@qDtBk@`@aAp@uFjDA@SLg@ZCBGDUJoC`BOHg@^oCfBmB`As@\\aAXgATyARkAHcCDuEPsCj@}BhA_CbByDrDmEdEaBbBqCfCYVsBdB_@ZuFzEuBjBoAp@kBlAm@h@aA~@yAtAcAlAy@pAeAvBq@rB{@dDk@fCgAlEw@`De@nBYhAKZkChIgI`VoBtF}AbE{@zBw@jBo@zA{@fB_AlBiAvBaAbBaAxAaAvAmA|AoBxBiB`BkA~@KFiAt@MFeAj@sB~@E@aBp@uAd@aDlAiAb@wBbAgAv@g@d@iA`Aq@r@{@hAw@hAo@fA[j@iAdCcAlCy@bCm@nBy@pCABe@|AsAzE]tA]rAe@~B[fBWhBMhAOjBOxBInCEjC?bBBtAHbCF|A@H@J??@TFj@JnALlAb@`DjD`VF`@X|BD\\DRJ~@b@lD\\fDTtCPlCP~CN`DFdBFrBDlDBxD?jD?d@CdDEhBE|AA`@MdDGbBI~AOvBOtB_@tE[rCu@~GoA|I}CxS_EhXiBzLKt@cA`HqAlJu@`Gk@dF_@jDs@hHUdCWfDWfDQxCMrBKtBQ~EGdBEfBIhDCpAArAApE?zA@fDDzBBjBBvAF`BDxAN~CNzCPjCJvAZjDVfCj@xEh@xD^~Bb@fCv@|Dt@nD`A`EdAtDn@xBp@rBr@rB`BjEdAfC|BzEnAbC|@bBpA~BnAxBdKfQ`A~A|F|JV`@BDhGjKfIlNbBpCxBdD~BfDrDxEtBdCrHtI`AlAlBdCjAdBjAjBx@|Ah@bAvAvCz@nB~@bCx@~B`AxCh@jBf@hBd@vBZrAZzAf@fCn@rDZhBtInh@lHnc@pA`Il@hDl@zCh@zBf@nBn@tBl@hBhBnEtBpD|BpDnBtCLPL\\t@hAt@hAx@xAfB~C@@FLBDJN@@HL@@FJ@B@B~CvE@BrBxC|@pApAjBTZrDhFRZn@`ATX`AxAx@pAx@tApAdCh@fAzBrErAlCb@z@LVlBtDjAdCZn@b@bAb@dA\\z@h@vANd@Nh@Tx@VrAJt@Df@HjA@p@?v@CtAGpAMfAOpA}@nGQlAq@~EKr@QxA]jD_@~Cq@bGc@~DSvBk@pFaCtT]~Cs@`H_@vDs@rIObCS~C}AtYCVg@tJ{H`zAgBx\\e@fKWjJIdI?rHFlJT~If@fLr@bLdDxe@nF|v@XnEb@nH`@rH`@rKNfKFnJAbJKnIQrIa@nKm@nK{@zLiBxWaBhVe@fGKzAe@lHyEnr@cBlV{@lLeA~KmAbKwAlJiGp_@mQfgAcCbOaD~Re@pCoAvHi@vCoDtQyDpPoDnOeBfH]vAqyAllGqAvFy@|D}AvIg@|CKr@a@pCeAhIa@dEQlBoHbz@]dEqA`NsAbLEZ}ApJyAtHKh@iA|EiApEy@`DaCtH_BpEqAhD{ApDyA`DcDpGkM|U}A~CsApCqAtCm@xAe@fAeBtE{@dCc@rAk@bByAfFeBrG}@vDu@jDy@lEw@pEu@tEu@~EaA|Im@nGc@zFG|@WpE[vGSrGMxGEpG?fIDdGJdHZlJb@fIX~DNpBn@lH@JJ`A@Jd@pEb@xDn@vFv@bGBLZpCJbAd@pEj@jGr@vJR`DPfDRpENpEHzF@~ADjF?bFG|GMfGSfGYbGg@nHs@~IMzAuAzNWjCKnAg@jFqDd`@U`C}ApPiBtRSpBw@jH}@`HcAlGgAlGoA`GsAtFiAbEaC`IaeAlkDUt@}c@bzAMb@gw@jiCyMlc@Ut@yOnh@gDzK{E|OgE|MUp@qBhGcAzCmHjSgIhTcDdIwBtFc@N[l@q@p@qBzAiAx@g@^cD`CMDM@MAKAQIWSUSU]QWKOQU[a@w@gAcByBSWs@cAQIOSIMGIm@w@c@o@GIiEaGgDuEaDoE}BaD}B_DOYqAkBg@s@e@q@w@gAW_@_AyAQYWl@Un@a@bAGNUj@IRc@jAMZuApDa@`Ak@zAo@`Bi@pA}AfEiAlCOd@CDo@dBeBnEs@lBgAlCELi@vA}@|Be@lASn@Uj@MZi@tAs@fBIRcAhC}@`Cy@rBIRWn@gAnC]v@Qf@Yz@GPABSj@Sx@k@fCGZU`AERMj@wDpPaAfEyAtGmBhIo@vCwK|e@I\\CLkAfFMh@MR]hASj@CXCHKHWr@Sj@MZMXEPCHK^CTqBpEWl@CH_@t@k@lAk@rAEJEFaA~BSd@KTUd@Yl@JFFDVX`@b@PJ\\D`@D`@BZHZL'
     },
-    // Locked steps — no coords, no content. The unlock flow (phase 4) will
-    // fetch batch-specific coordinates from Origino and fill these in.
-    { order: 4, batchDependent: true },
-    { order: 5, batchDependent: true }
+    {
+      order: 4,
+      title: 'Brewed with craft and tradition.',
+      story: '<p>From malt to mash to fermentation, every batch is brewed with care at a family-owned brewery.</p>',
+      quote: 'A beer should taste of the land it comes from.',
+      author: { name: 'Brouwerij Huyghe', avatar: '' },
+      learnMoreUrl: '#',
+      lat: 50.999559,
+      lon: 3.804911 // Brouwerij Huyghe, Melle
+    }
   ]
 };
 
@@ -293,11 +319,8 @@ function bezierCurve(from, to, curvature, samples) {
 }
 
 function stepsWithCoords(steps) {
-  // A step is "known" when it has finite lat/lon AND no batchDependent flag
-  // is set. We stop at the first unknown so the drawn line ends cleanly.
   const result = [];
   for (const step of steps) {
-    if (step.batchDependent === true) break;
     if (!isFiniteNumber(step.lat) || !isFiniteNumber(step.lon)) break;
     result.push(step);
   }
@@ -305,9 +328,7 @@ function stepsWithCoords(steps) {
 }
 
 function isStepUnlocked(step) {
-  return !step.batchDependent
-    && isFiniteNumber(step.lat)
-    && isFiniteNumber(step.lon);
+  return isFiniteNumber(step.lat) && isFiniteNumber(step.lon);
 }
 
 function readJourneyData(wrapper) {
@@ -565,7 +586,7 @@ function buildProgressBar(wrapper, steps) {
     element.style.setProperty('--progress', '0');
 
     const lockEl = element.querySelector('[data-progress-icon]');
-    if (lockEl) lockEl.style.display = step.batchDependent ? '' : 'none';
+    if (lockEl) lockEl.style.display = 'none';
 
     // Capture the inner fill element (if any) and prime it with inline
     // styles. We write the transform DIRECTLY on this element from JS rather
@@ -664,18 +685,13 @@ function setSlot(wrapper, selector, fn) {
 
 
 // --------------------------------------------
-// Locked count footer
+// Locked count footer (legacy — kept as a no-op for backward compat)
 // --------------------------------------------
-function updateLockedCount(wrapper, steps) {
-  const locked = steps.filter((s) => s.batchDependent === true).length;
-  const total = steps.length;
-  const percent = total > 0 ? Math.round((locked / total) * 100) : 0;
-
+function updateLockedCount(wrapper) {
   setSlot(wrapper, '[data-journey-locked-count]', (el) => {
-    el.textContent = locked > 0 ? `${percent}% data is locked` : '';
+    el.textContent = '';
   });
-
-  wrapper.setAttribute('data-journey-unlock-state', locked > 0 ? 'incomplete' : 'complete');
+  wrapper.setAttribute('data-journey-unlock-state', 'complete');
 }
 
 
@@ -830,11 +846,7 @@ function setActiveStep(instance, order, options) {
 
   // Progress bar state attributes.
   instance.progressSegments.forEach((seg) => {
-    const s = seg.step;
-    let state;
-    if (s.batchDependent) state = 'locked';
-    else if (s.order === order) state = 'active';
-    else state = 'unlocked';
+    const state = seg.step.order === order ? 'active' : 'unlocked';
     seg.element.setAttribute('data-progress-bar', state);
   });
 
@@ -1039,6 +1051,9 @@ function purgeStaleInstances() {
   journeyInstances.forEach((inst) => {
     if (!inst.wrapper || !document.contains(inst.wrapper)) destroyInstance(inst);
   });
+  overlayInstances.forEach((inst) => {
+    if (!inst.wrapper || !document.contains(inst.wrapper)) destroyOverlay(inst);
+  });
 }
 
 
@@ -1170,7 +1185,7 @@ function initInstance(wrapper) {
     instance.lineSegments = addJourneySegments(map, steps, opts);
     instance.pins = addPins(map, mapboxgl, steps);
     instance.progressSegments = buildProgressBar(wrapper, steps);
-    updateLockedCount(wrapper, steps);
+    updateLockedCount(wrapper);
 
     // Initialise every step's progress to 0 so the data structure exists
     // before the first setActiveStep call writes targets.
@@ -1297,6 +1312,249 @@ function initInstance(wrapper) {
 
 
 // --------------------------------------------
+// Unlock overlay
+// --------------------------------------------
+// When a `[data-journey-overlay]` element (`.geography_overlay`) exists
+// inside the wrapper, the map is NOT initialised on page load. Instead we
+// show a two-screen overlay:
+//   Screen 1 (`[data-journey-unlock-step="1"]`) — hero + CTA "Start" button
+//   Screen 2 (`[data-journey-unlock-step="2"]`) — 4-digit MM/YY input
+// After a successful API call the overlay is hidden and `initInstance` runs.
+//
+// Markup inside `.geography_overlay`:
+//   [data-journey-unlock-step="1"]  Screen 1, contains the Start CTA
+//     <a data-journey-overlay-action="start" class="ui-button">Start</a>
+//   [data-journey-unlock-step="2"]  Screen 2, initially display:none
+//     .unlock_input-container
+//       form.w-form                 Webflow form block (submit intercepted by JS)
+//         .unlock_input-wrapper     One per digit (label + input pair)
+//           label.unlock_input-label  Visually hidden, for screen readers
+//           input.unlock_input[data-journey-date-digit="1"]  M
+//         .unlock_input-wrapper
+//           ...input[data-journey-date-digit="2"]             M
+//         .unlock_separator          "/" divider (plain div/text)
+//         .unlock_input-wrapper
+//           ...input[data-journey-date-digit="3"]             Y
+//         .unlock_input-wrapper
+//           ...input[data-journey-date-digit="4"]             Y
+//     [data-journey-overlay-error]  Error text container
+const OVERLAY_INIT_FLAG = 'journeyOverlayInit';
+const overlayInstances = new Set();
+
+// Ordered digit indices for the 4-box MM/YY input.
+const DIGIT_KEYS = ['1', '2', '3', '4'];
+
+function getDigitInputs(overlay) {
+  return DIGIT_KEYS.map(
+    (k) => overlay.querySelector(`[data-journey-date-digit="${k}"]`)
+  ).filter(Boolean);
+}
+
+function readDateFromDigits(overlay) {
+  const digits = getDigitInputs(overlay);
+  if (digits.length < 4) return null;
+  const d1 = digits[0].value.trim();
+  const d2 = digits[1].value.trim();
+  const d3 = digits[2].value.trim();
+  const d4 = digits[3].value.trim();
+  if (!d1 || !d2 || !d3 || !d4) return null;
+  return d1 + d2 + '/' + d3 + d4;
+}
+
+function validateDate(value) {
+  if (!value) return null;
+  const match = value.match(/^(\d{2})\/(\d{2})$/);
+  if (!match) return null;
+  const month = parseInt(match[1], 10);
+  if (month < 1 || month > 12) return null;
+  return { month: match[1], year: match[2], formatted: match[1] + '/' + match[2] };
+}
+
+function setOverlayError(overlay, message) {
+  const el = overlay.querySelector('[data-journey-overlay-error]');
+  if (el) el.textContent = message || '';
+}
+
+function setOverlayLoading(overlay, loading) {
+  overlay.querySelectorAll('[data-journey-overlay-action="submit"]').forEach((btn) => {
+    btn.disabled = loading;
+    btn.setAttribute('aria-busy', String(loading));
+  });
+  getDigitInputs(overlay).forEach((inp) => { inp.disabled = loading; });
+}
+
+function showUnlockStep(overlay, step) {
+  const s1 = overlay.querySelector('[data-journey-unlock-step="1"]');
+  const s2 = overlay.querySelector('[data-journey-unlock-step="2"]');
+  if (s1) s1.style.display = step === 1 ? '' : 'none';
+  if (s2) s2.style.display = step === 2 ? '' : 'none';
+}
+
+async function submitDate(wrapper, overlay) {
+  setOverlayError(overlay, '');
+  const raw = readDateFromDigits(overlay);
+  const parsed = validateDate(raw);
+  if (!parsed) {
+    setOverlayError(overlay, 'Please enter a valid date (MM/YY).');
+    return;
+  }
+
+  const beerSlug = wrapper.getAttribute('data-journey-beer-slug') || '';
+
+  // ── Fixture / demo mode ──────────────────────────────────────────────
+  // When no beer slug is configured we skip the API call entirely and
+  // validate against the hardcoded FIXTURE_FALLBACK date.
+  if (!beerSlug) {
+    if (parsed.formatted !== FIXTURE_DATE) {
+      setOverlayError(overlay, 'No journey found for this date.');
+      return;
+    }
+    wrapper.setAttribute('data-journey-data', JSON.stringify(FIXTURE_FALLBACK));
+    overlay.style.display = 'none';
+    initInstance(wrapper);
+    return;
+  }
+
+  // ── Production mode — fetch from Netlify function ────────────────────
+  setOverlayLoading(overlay, true);
+  try {
+    const res = await fetch('/.netlify/functions/journey-unlock', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ beerSlug, date: parsed.formatted })
+    });
+
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      setOverlayError(overlay, body.error || 'No journey found for this date.');
+      return;
+    }
+
+    const { journey } = await res.json();
+    if (!journey || !Array.isArray(journey.steps) || journey.steps.length === 0) {
+      setOverlayError(overlay, 'No journey data available for this date.');
+      return;
+    }
+
+    wrapper.setAttribute('data-journey-data', JSON.stringify(journey));
+    overlay.style.display = 'none';
+    initInstance(wrapper);
+  } catch (err) {
+    console.error('[journey-map] unlock fetch failed', err);
+    setOverlayError(overlay, 'Network error. Please try again.');
+  } finally {
+    setOverlayLoading(overlay, false);
+  }
+}
+
+function destroyOverlay(inst) {
+  if (inst.handlers) {
+    inst.handlers.forEach(({ element, event, handler }) => {
+      element.removeEventListener(event, handler);
+    });
+  }
+  overlayInstances.delete(inst);
+}
+
+function initOverlay(wrapper, overlay) {
+  if (wrapper.dataset[OVERLAY_INIT_FLAG]) return;
+  if (wrapper.dataset[INIT_FLAG] === 'initialized') return;
+
+  wrapper.dataset[OVERLAY_INIT_FLAG] = 'initialized';
+  const inst = { wrapper, overlay, handlers: [] };
+  overlayInstances.add(inst);
+
+  function addHandler(element, event, handler) {
+    element.addEventListener(event, handler);
+    inst.handlers.push({ element, event, handler });
+  }
+
+  // Ensure initial screen state: step 1 visible, step 2 hidden.
+  showUnlockStep(overlay, 1);
+
+  // Intercept Webflow's form submit — we handle submission via JS fetch,
+  // not native form POST. Also hide Webflow's success/error banners.
+  overlay.querySelectorAll('form').forEach((form) => {
+    addHandler(form, 'submit', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      submitDate(wrapper, overlay);
+    });
+  });
+  overlay.querySelectorAll('.w-form-done, .w-form-fail').forEach((el) => {
+    el.style.display = 'none';
+  });
+
+  // Screen 1 → Screen 2: any [data-journey-overlay-action="start"] element,
+  // or falls back to auto-detecting a.ui-button inside step 1.
+  const step1 = overlay.querySelector('[data-journey-unlock-step="1"]');
+  if (step1) {
+    const explicitStart = step1.querySelectorAll('[data-journey-overlay-action="start"]');
+    const triggers = explicitStart.length > 0
+      ? Array.from(explicitStart)
+      : Array.from(step1.querySelectorAll('a.ui-button, button.ui-button, [role="button"]'));
+
+    triggers.forEach((btn) => {
+      addHandler(btn, 'click', (e) => {
+        e.preventDefault();
+        showUnlockStep(overlay, 2);
+        const digits = getDigitInputs(overlay);
+        if (digits[0]) requestAnimationFrame(() => digits[0].focus());
+      });
+    });
+  }
+
+  // 4-digit date inputs: numeric filter, auto-advance, backspace retreat.
+  const digits = getDigitInputs(overlay);
+  digits.forEach((input, idx) => {
+    addHandler(input, 'input', () => {
+      input.value = input.value.replace(/\D/g, '').slice(0, 1);
+      if (input.value.length === 1 && idx < digits.length - 1) {
+        digits[idx + 1].focus();
+      }
+      // Auto-submit when the last digit is filled.
+      if (idx === digits.length - 1 && input.value.length === 1) {
+        submitDate(wrapper, overlay);
+      }
+    });
+
+    addHandler(input, 'keydown', (e) => {
+      if (e.key === 'Backspace' && input.value === '' && idx > 0) {
+        e.preventDefault();
+        digits[idx - 1].value = '';
+        digits[idx - 1].focus();
+      }
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        submitDate(wrapper, overlay);
+      }
+    });
+
+    // Handle paste (e.g. "0126" or "01/26") — distribute across boxes.
+    addHandler(input, 'paste', (e) => {
+      e.preventDefault();
+      const text = (e.clipboardData || window.clipboardData).getData('text');
+      const nums = text.replace(/\D/g, '').slice(0, 4);
+      for (let i = 0; i < nums.length && i < digits.length; i++) {
+        digits[i].value = nums[i];
+      }
+      const focusIdx = Math.min(nums.length, digits.length - 1);
+      digits[focusIdx].focus();
+      if (nums.length >= 4) submitDate(wrapper, overlay);
+    });
+  });
+
+  // Explicit submit button (optional — auto-submit fires on 4th digit).
+  overlay.querySelectorAll('[data-journey-overlay-action="submit"]').forEach((btn) => {
+    addHandler(btn, 'click', (e) => {
+      e.preventDefault();
+      submitDate(wrapper, overlay);
+    });
+  });
+}
+
+
+// --------------------------------------------
 // Entry
 // --------------------------------------------
 function initJourneyMap(container) {
@@ -1304,7 +1562,14 @@ function initJourneyMap(container) {
   purgeStaleInstances();
   const wrappers = container.querySelectorAll(SELECTOR);
   if (!wrappers.length) return;
-  wrappers.forEach(initInstance);
+  wrappers.forEach((wrapper) => {
+    const overlay = wrapper.querySelector('[data-journey-overlay]');
+    if (overlay) {
+      initOverlay(wrapper, overlay);
+    } else {
+      initInstance(wrapper);
+    }
+  });
 }
 
 function journeyMap() {

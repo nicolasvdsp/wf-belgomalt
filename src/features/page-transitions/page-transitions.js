@@ -1081,7 +1081,7 @@ function initPageTransitions() {
     preventRunning: true,
     prevent: ({ el }) => {
       if (el?.hash && el.pathname.replace(/\/$/, '') === window.location.pathname.replace(/\/$/, '')) return true;
-      return !!el?.closest('[data-counter-add], [data-anchor-target], [data-dialog-open], [data-dialog-close]');
+      return !!el?.closest('[data-counter-add], [data-anchor-target], [data-dialog-open], [data-dialog-close], [data-journey-overlay-action]');
     },
     transitions: [
       { //item to detail page

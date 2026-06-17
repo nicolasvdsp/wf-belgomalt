@@ -191,12 +191,12 @@ const FIXTURE_FALLBACK = {
     {
       order: 1,
       title: 'Barley grown on Belgian regenerative farms committed to healthier soils.',
-      story: '<p>Our barley is grown on small Walloon farms practicing no-till agriculture. Healthier soils, better grain.</p>',
-      quote: 'I have been practicing no-till farming for 20 years. I am convinced that living soil allows for healthier cultivation.',
+      story: '',
+      quote: '',
       author: { name: 'Étienne Allard', avatar: '' },
-      date: 'Febr 01, 2026',
+      date: 'Feb 20, 2026',
       address: 'Ferme des Warelles<br>Zwarte Vogelstraat 15, 7850 Edingen',
-      learnMoreText: '<p>Etienne Allard is one of our more than 100 Belgian farmers who is growing brewing barley for the Pure Local programme. He applies progressive farming practices that restore soil health, support biodiversity, and store atmospheric CO₂ in the soil. Etienne is very proud that his grains are used to brew some of the most prestigious Belgian beers. Cheers to Etienne—and cheers to our Belgian brewing culture!</p>',
+      learnMoreText: '<h2>Etienne Allard is one of our more than 100 Belgian farmers who is growing brewing barley for the Pure Local programme.</h2><p>He applies progressive farming practices that restore soil health, support biodiversity, and store atmospheric CO₂ in the soil. Etienne is very proud that his grains are used to brew some of the most prestigious Belgian beers. Cheers to Etienne—and cheers to our Belgian brewing culture!</p>',
       lat: 50.2929,
       lon: 5.0944, // Ciney
       // Ciney → Cultivae (50.5 km driving)
@@ -204,13 +204,13 @@ const FIXTURE_FALLBACK = {
     },
     {
       order: 2,
-      title: 'Gathered at the cooperative.',
-      story: '<p>The harvest is pooled at a local cooperative that coordinates between farmers and the malting house.</p>',
-      quote: 'We bridge the gap between field and factory.',
+      title: 'The place where the grains were stored.',
+      story: '',
+      quote: '',
       author: { name: 'Cultivae', avatar: '' },
-      date: 'Febr 18, 2026',
-      address: 'Cultivae<br>Rue du Buisson 19, 1360 Perwez',
-      learnMoreText: '<p>Cultivae is the cooperative behind more than 100 Pure Local barley farmers. They receive the grains once they are harvested, store them for a few months, then clean and deliver them to the malthouse to be transformed into malt.</p><p>Cultivae is not just a typical cooperative—they stand out through their strong support for the transition from conventional to regenerative farming. They actively advise farmers on how to support nature through their farming practices.</p>',
+      date: 'Feb 30, 2026',
+      address: 'Rue du Buisson 19, 1360 Perwez',
+      learnMoreText: '<h2>Cultivae is the cooperative behind more than 100 Pure Local barley farmers.</h2><p>They receive the grains once they are harvested, store them for a few months, then clean and deliver them to the malthouse to be transformed into malt.</p><p>Cultivae is not just a typical cooperative—they stand out through their strong support for the transition from conventional to regenerative farming. They actively advise farmers on how to support nature through their farming practices.</p>',
       lat: 50.644026,
       lon: 4.797971, // Cultivae
       // Cultivae → Boortmalt Herent (42.3 km driving)
@@ -218,27 +218,39 @@ const FIXTURE_FALLBACK = {
     },
     {
       order: 3,
-      title: 'Malted in the heart of Belgium.',
-      story: '<p>The grain is transformed into malt at one of the oldest malteries in the country.</p>',
-      quote: 'Malting is the alchemy that wakes the grain up.',
-      author: { name: 'Boortmalt', avatar: '' },
-      date: 'March 31, 2026',
-      address: 'Belgomalt<br>Zijpstraat 155, 3020 Herent',
-      learnMoreText: '<p>Belgomalt–Boortmalt receives the barley from Cultivae and transforms it into malt. This process takes approximately seven days. In the malthouse, they make the barley kernel ‘believe’ it is in the ground and needs to sprout (germinate). First, the barley is soaked in water, then it is transferred to the germination room, where it can grow. The process is then paused by drying the barley in the final phase.</p><p>During germination, a wide range of natural enzymes is released within the barley kernel. These enzymes play a crucial role in the brewery, where they convert complex starches in the barley into simple sugars in the wort—ideal food for the yeast.</p>',
+      title: 'Delivery of the barley to Belgomalt',
+      story: '',
+      quote: '',
+      author: { name: 'Boorrtmalt Herent', avatar: '' },
+      date: 'Feb 18, 2026',
+      address: 'Zijpstraat 155, 3020 Herent',
+      learnMoreText: '<h2>Belgomalt–Boortmalt receives the barley from Cultivae and transforms it into malt.</h2><p>This process takes approximately seven days. In the malthouse, they make the barley kernel ‘believe’ it is in the ground and needs to sprout (germinate). First, the barley is soaked in water, then it is transferred to the germination room, where it can grow. The process is then paused by drying the barley in the final phase.</p><p>During germination, a wide range of natural enzymes is released within the barley kernel. These enzymes play a crucial role in the brewery, where they convert complex starches in the barley into simple sugars in the wort—ideal food for the yeast.</p>',
       lat: 50.928777,
       lon: 4.680181, // Boortmalt Herent
-      // Boortmalt Herent → Brouwerij Huyghe (79.2 km driving)
-      lineToNext: 'gczuHw}p[Rl@?LSf@M^G^XdBBRBNZnBLp@R^TLLBx@DrZ|ANBFu@?ABO??XgDH[DQLQZ]JQDUJ}AB[Bc@DSDWv@kCPk@DOHODM@C@W@MP@\\DXBN@fBU|@MlAOHANCl@KnBUNEXMXQLKLMHKBCVYdAsAl@q@xAcB`BmBZa@t@u@^c@V[TW`@q@^_A@CFY?A@KFADEBGDD@?VZJN`@h@|EhG|BdDx@rAjBbDz@jBf@nAJ`@Lh@BFn@lDPn@zA`EZt@NLNJvBZ|ARjC\\j@F??VD`@Fd@[HIl@s@VWPOVU\\WTOPKXQb@U`@Q`AY\\I^IZE^Ef@CfISjAEnACx@CnAA|DM`CGXC^EbAOPETGl@Ur@WHAXGRIROBCd@e@JINQn@w@DGDITYd@m@DKh@{@Nc@b@u@DKT_@HQBENWNYJGbEkHBGJSv@_BN]r@uAhAqBdCqETc@LCb@u@d@w@V[LMPUJIHKLMVURAF@B@HBJD`GxNL^p@hBV\\vAjFdBlGrAlEj@dBv@tBj@vAv@`Bv@zApAvBzAvBlAxAxCtC|CbCzIhGzAbAjE|CdBpAdBrAzBpB|@v@nArAj@l@`AnAfBdCrAtBhAxBr@zAdAlCt@`Ch@fBl@bCrAvFh@zBnAvFx@`Dh@bBl@jBz@xBf@nA~@jBdAjBlA`BlAzAp@t@tAlA~AnAzA|@pAn@v@ZpBn@`Bb@dBb@JBfDx@|Aj@v@Zj@VtBlA\\Rt@n@xBnBzDfEzDnEpBdCzCjDfGdHpCbDvAlBx@dAl@x@X`@Nb@V`@PVNXRZR\\NZNVBDR^NZVl@Xn@Zz@L^L\\DPVx@HZDNDLJ`@VlARx@Z~AX~AZbBZbBJl@Hl@Lp@Hl@Ht@DZDd@BRFx@Bf@Dv@@l@@bA@jA?\\?f@Az@Cx@GtAGvAI|AE|@G|@MxBWrDMbCWvEI~AEt@OnB?N?j@}Dbk@KvAoCb`@o@~Iw@`Lk@dIcBrUiBxT{WntCcBjRy@|Jm@pHs@`Jm@rIk@xIc@~H[tFg@tKG|A[rHO`FSdGWbKQ~HOlJWnZEhNEvRAfF?rUEhpBAzY?zX?xK?jUApW?~q@A~S?rK?xI@tYHfUDdCB~B?DS|CIdBOnBw@nH_AvHKz@WvBo@xE[~AS~@WjAUt@]z@]t@]n@i@t@k@t@IHc@f@_@ZCFYb@IF}ExCcF|C_Aj@qDtBk@`@aAp@uFjDA@SLg@ZCBGDUJoC`BOHg@^oCfBmB`As@\\aAXgATyARkAHcCDuEPsCj@}BhA_CbByDrDmEdEaBbBqCfCYVsBdB_@ZuFzEuBjBoAp@kBlAm@h@aA~@yAtAcAlAy@pAeAvBq@rB{@dDk@fCgAlEw@`De@nBYhAKZkChIgI`VoBtF}AbE{@zBw@jBo@zA{@fB_AlBiAvBaAbBaAxAaAvAmA|AoBxBiB`BkA~@KFiAt@MFeAj@sB~@E@aBp@uAd@aDlAiAb@wBbAgAv@g@d@iA`Aq@r@{@hAw@hAo@fA[j@iAdCcAlCy@bCm@nBy@pCABe@|AsAzE]tA]rAe@~B[fBWhBMhAOjBOxBInCEjC?bBBtAHbCF|A@H@J??@TFj@JnALlAb@`DjD`VF`@X|BD\\DRJ~@b@lD\\fDTtCPlCP~CN`DFdBFrBDlDBxD?jD?d@CdDEhBE|AA`@MdDGbBI~AOvBOtB_@tE[rCu@~GoA|I}CxS_EhXiBzLKt@cA`HqAlJu@`Gk@dF_@jDs@hHUdCWfDWfDQxCMrBKtBQ~EGdBEfBIhDCpAArAApE?zA@fDDzBBjBBvAF`BDxAN~CNzCPjCJvAZjDVfCj@xEh@xD^~Bb@fCv@|Dt@nD`A`EdAtDn@xBp@rBr@rB`BjEdAfC|BzEnAbC|@bBpA~BnAxBdKfQ`A~A|F|JV`@BDhGjKfIlNbBpCxBdD~BfDrDxEtBdCrHtI`AlAlBdCjAdBjAjBx@|Ah@bAvAvCz@nB~@bCx@~B`AxCh@jBf@hBd@vBZrAZzAf@fCn@rDZhBtInh@lHnc@pA`Il@hDl@zCh@zBf@nBn@tBl@hBhBnEtBpD|BpDnBtCLPL\\t@hAt@hAx@xAfB~C@@FLBDJN@@HL@@FJ@B@B~CvE@BrBxC|@pApAjBTZrDhFRZn@`ATX`AxAx@pAx@tApAdCh@fAzBrErAlCb@z@LVlBtDjAdCZn@b@bAb@dA\\z@h@vANd@Nh@Tx@VrAJt@Df@HjA@p@?v@CtAGpAMfAOpA}@nGQlAq@~EKr@QxA]jD_@~Cq@bGc@~DSvBk@pFaCtT]~Cs@`H_@vDs@rIObCS~C}AtYCVg@tJ{H`zAgBx\\e@fKWjJIdI?rHFlJT~If@fLr@bLdDxe@nF|v@XnEb@nH`@rH`@rKNfKFnJAbJKnIQrIa@nKm@nK{@zLiBxWaBhVe@fGKzAe@lHyEnr@cBlV{@lLeA~KmAbKwAlJiGp_@mQfgAcCbOaD~Re@pCoAvHi@vCoDtQyDpPoDnOeBfH]vAqyAllGqAvFy@|D}AvIg@|CKr@a@pCeAhIa@dEQlBoHbz@]dEqA`NsAbLEZ}ApJyAtHKh@iA|EiApEy@`DaCtH_BpEqAhD{ApDyA`DcDpGkM|U}A~CsApCqAtCm@xAe@fAeBtE{@dCc@rAk@bByAfFeBrG}@vDu@jDy@lEw@pEu@tEu@~EaA|Im@nGc@zFG|@WpE[vGSrGMxGEpG?fIDdGJdHZlJb@fIX~DNpBn@lH@JJ`A@Jd@pEb@xDn@vFv@bGBLZpCJbAd@pEj@jGr@vJR`DPfDRpENpEHzF@~ADjF?bFG|GMfGSfGYbGg@nHs@~IMzAuAzNWjCKnAg@jFqDd`@U`C}ApPiBtRSpBw@jH}@`HcAlGgAlGoA`GsAtFiAbEaC`IaeAlkDUt@}c@bzAMb@gw@jiCyMlc@Ut@yOnh@gDzK{E|OgE|MUp@qBhGcAzCmHjSgIhTcDdIwBtFc@N[l@q@p@qBzAiAx@g@^cD`CMDM@MAKAQIWSUSU]QWKOQU[a@w@gAcByBSWs@cAQIOSIMGIm@w@c@o@GIiEaGgDuEaDoE}BaD}B_DOYqAkBg@s@e@q@w@gAW_@_AyAQYWl@Un@a@bAGNUj@IRc@jAMZuApDa@`Ak@zAo@`Bi@pA}AfEiAlCOd@CDo@dBeBnEs@lBgAlCELi@vA}@|Be@lASn@Uj@MZi@tAs@fBIRcAhC}@`Cy@rBIRWn@gAnC]v@Qf@Yz@GPABSj@Sx@k@fCGZU`AERMj@wDpPaAfEyAtGmBhIo@vCwK|e@I\\CLkAfFMh@MR]hASj@CXCHKHWr@Sj@MZMXEPCHK^CTqBpEWl@CH_@t@k@lAk@rAEJEFaA~BSd@KTUd@Yl@JFFDVX`@b@PJ\\D`@D`@BZHZL'
+      // Cultivae → Boortmalt Herent (42.3 km driving)
     },
     {
       order: 4,
+      title: 'When the barley is transformed into malt.',
+      story: '',
+      quote: '',
+      author: { name: 'Boortmalt', avatar: '' },
+      date: 'March 31, 2026',
+      address: 'Belgomalt<br>Zijpstraat 155, 3020 Herent',
+      learnMoreText: '',
+      lat: 50.928777,
+      lon: 4.680181, // Boortmalt Herent
+      lineToNext: 'gczuHw}p[Rl@?LSf@M^G^XdBBRBNZnBLp@R^TLLBx@DrZ|ANBFu@?ABO??XgDH[DQLQZ]JQDUJ}AB[Bc@DSDWv@kCPk@DOHODM@C@W@MP@\\DXBN@fBU|@MlAOHANCl@KnBUNEXMXQLKLMHKBCVYdAsAl@q@xAcB`BmBZa@t@u@^c@V[TW`@q@^_A@CFY?A@KFADEBGDD@?VZJN`@h@|EhG|BdDx@rAjBbDz@jBf@nAJ`@Lh@BFn@lDPn@zA`EZt@NLNJvBZ|ARjC\\j@F??VD`@Fd@[HIl@s@VWPOVU\\WTOPKXQb@U`@Q`AY\\I^IZE^Ef@CfISjAEnACx@CnAA|DM`CGXC^EbAOPETGl@Ur@WHAXGRIROBCd@e@JINQn@w@DGDITYd@m@DKh@{@Nc@b@u@DKT_@HQBENWNYJGbEkHBGJSv@_BN]r@uAhAqBdCqETc@LCb@u@d@w@V[LMPUJIHKLMVURAF@B@HBJD`GxNL^p@hBV\\vAjFdBlGrAlEj@dBv@tBj@vAv@`Bv@zApAvBzAvBlAxAxCtC|CbCzIhGzAbAjE|CdBpAdBrAzBpB|@v@nArAj@l@`AnAfBdCrAtBhAxBr@zAdAlCt@`Ch@fBl@bCrAvFh@zBnAvFx@`Dh@bBl@jBz@xBf@nA~@jBdAjBlA`BlAzAp@t@tAlA~AnAzA|@pAn@v@ZpBn@`Bb@dBb@JBfDx@|Aj@v@Zj@VtBlA\\Rt@n@xBnBzDfEzDnEpBdCzCjDfGdHpCbDvAlBx@dAl@x@X`@Nb@V`@PVNXRZR\\NZNVBDR^NZVl@Xn@Zz@L^L\\DPVx@HZDNDLJ`@VlARx@Z~AX~AZbBZbBJl@Hl@Lp@Hl@Ht@DZDd@BRFx@Bf@Dv@@l@@bA@jA?\\?f@Az@Cx@GtAGvAI|AE|@G|@MxBWrDMbCWvEI~AEt@OnB?N?j@}Dbk@KvAoCb`@o@~Iw@`Lk@dIcBrUiBxT{WntCcBjRy@|Jm@pHs@`Jm@rIk@xIc@~H[tFg@tKG|A[rHO`FSdGWbKQ~HOlJWnZEhNEvRAfF?rUEhpBAzY?zX?xK?jUApW?~q@A~S?rK?xI@tYHfUDdCB~B?DS|CIdBOnBw@nH_AvHKz@WvBo@xE[~AS~@WjAUt@]z@]t@]n@i@t@k@t@IHc@f@_@ZCFYb@IF}ExCcF|C_Aj@qDtBk@`@aAp@uFjDA@SLg@ZCBGDUJoC`BOHg@^oCfBmB`As@\\aAXgATyARkAHcCDuEPsCj@}BhA_CbByDrDmEdEaBbBqCfCYVsBdB_@ZuFzEuBjBoAp@kBlAm@h@aA~@yAtAcAlAy@pAeAvBq@rB{@dDk@fCgAlEw@`De@nBYhAKZkChIgI`VoBtF}AbE{@zBw@jBo@zA{@fB_AlBiAvBaAbBaAxAaAvAmA|AoBxBiB`BkA~@KFiAt@MFeAj@sB~@E@aBp@uAd@aDlAiAb@wBbAgAv@g@d@iA`Aq@r@{@hAw@hAo@fA[j@iAdCcAlCy@bCm@nBy@pCABe@|AsAzE]tA]rAe@~B[fBWhBMhAOjBOxBInCEjC?bBBtAHbCF|A@H@J??@TFj@JnALlAb@`DjD`VF`@X|BD\\DRJ~@b@lD\\fDTtCPlCP~CN`DFdBFrBDlDBxD?jD?d@CdDEhBE|AA`@MdDGbBI~AOvBOtB_@tE[rCu@~GoA|I}CxS_EhXiBzLKt@cA`HqAlJu@`Gk@dF_@jDs@hHUdCWfDWfDQxCMrBKtBQ~EGdBEfBIhDCpAArAApE?zA@fDDzBBjBBvAF`BDxAN~CNzCPjCJvAZjDVfCj@xEh@xD^~Bb@fCv@|Dt@nD`A`EdAtDn@xBp@rBr@rB`BjEdAfC|BzEnAbC|@bBpA~BnAxBdKfQ`A~A|F|JV`@BDhGjKfIlNbBpCxBdD~BfDrDxEtBdCrHtI`AlAlBdCjAdBjAjBx@|Ah@bAvAvCz@nB~@bCx@~B`AxCh@jBf@hBd@vBZrAZzAf@fCn@rDZhBtInh@lHnc@pA`Il@hDl@zCh@zBf@nBn@tBl@hBhBnEtBpD|BpDnBtCLPL\\t@hAt@hAx@xAfB~C@@FLBDJN@@HL@@FJ@B@B~CvE@BrBxC|@pApAjBTZrDhFRZn@`ATX`AxAx@pAx@tApAdCh@fAzBrErAlCb@z@LVlBtDjAdCZn@b@bAb@dA\\z@h@vANd@Nh@Tx@VrAJt@Df@HjA@p@?v@CtAGpAMfAOpA}@nGQlAq@~EKr@QxA]jD_@~Cq@bGc@~DSvBk@pFaCtT]~Cs@`H_@vDs@rIObCS~C}AtYCVg@tJ{H`zAgBx\\e@fKWjJIdI?rHFlJT~If@fLr@bLdDxe@nF|v@XnEb@nH`@rH`@rKNfKFnJAbJKnIQrIa@nKm@nK{@zLiBxWaBhVe@fGKzAe@lHyEnr@cBlV{@lLeA~KmAbKwAlJiGp_@mQfgAcCbOaD~Re@pCoAvHi@vCoDtQyDpPoDnOeBfH]vAqyAllGqAvFy@|D}AvIg@|CKr@a@pCeAhIa@dEQlBoHbz@]dEqA`NsAbLEZ}ApJyAtHKh@iA|EiApEy@`DaCtH_BpEqAhD{ApDyA`DcDpGkM|U}A~CsApCqAtCm@xAe@fAeBtE{@dCc@rAk@bByAfFeBrG}@vDu@jDy@lEw@pEu@tEu@~EaA|Im@nGc@zFG|@WpE[vGSrGMxGEpG?fIDdGJdHZlJb@fIX~DNpBn@lH@JJ`A@Jd@pEb@xDn@vFv@bGBLZpCJbAd@pEj@jGr@vJR`DPfDRpENpEHzF@~ADjF?bFG|GMfGSfGYbGg@nHs@~IMzAuAzNWjCKnAg@jFqDd`@U`C}ApPiBtRSpBw@jH}@`HcAlGgAlGoA`GsAtFiAbEaC`IaeAlkDUt@}c@bzAMb@gw@jiCyMlc@Ut@yOnh@gDzK{E|OgE|MUp@qBhGcAzCmHjSgIhTcDdIwBtFc@N[l@q@p@qBzAiAx@g@^cD`CMDM@MAKAQIWSUSU]QWKOQU[a@w@gAcByBSWs@cAQIOSIMGIm@w@c@o@GIiEaGgDuEaDoE}BaD}B_DOYqAkBg@s@e@q@w@gAW_@_AyAQYWl@Un@a@bAGNUj@IRc@jAMZuApDa@`Ak@zAo@`Bi@pA}AfEiAlCOd@CDo@dBeBnEs@lBgAlCELi@vA}@|Be@lASn@Uj@MZi@tAs@fBIRcAhC}@`Cy@rBIRWn@gAnC]v@Qf@Yz@GPABSj@Sx@k@fCGZU`AERMj@wDpPaAfEyAtGmBhIo@vCwK|e@I\\CLkAfFMh@MR]hASj@CXCHKHWr@Sj@MZMXEPCHK^CTqBpEWl@CH_@t@k@lAk@rAEJEFaA~BSd@KTUd@Yl@JFFDVX`@b@PJ\\D`@D`@BZHZL'
+    },
+    {
+      order: 5,
       title: 'Brewed with craft and tradition.',
-      story: '<p>From malt to mash to fermentation, every batch is brewed with care at a family-owned brewery.</p>',
-      quote: 'A beer should taste of the land it comes from.',
+      story: '',
+      quote: '',
       author: { name: 'Brouwerij Huyghe', avatar: '' },
       date: 'April 06, 2026',
-      address: 'Delirium Huyghe<br>Geraardsbergse steenweg 14b, 9090 Melle',
-      learnMoreText: '<p>Delirium Tremens is a beer brewed with 100% malt, with no other sources of sugar added. Malt is one of the main raw ingredients used in brewing. It gives beer its colour and round character, and provides the sugars needed for yeast to produce CO₂ and alcohol.</p><p>Delirium Tremens is the first beer in Belgium brewed entirely with Pure Local malt that has a negative CO₂ balance. So, you can enjoy this beer knowing you are supporting nature.</p>',
+      address: 'Geraardsbergse steenweg 14b, 9090 Melle',
+      learnMoreText: '<h2>Delirium Tremens is a beer brewed with 100% malt, with no other sources of sugar added.</h2><p>Malt is one of the main raw ingredients used in brewing. It gives beer its colour and round character, and provides the sugars needed for yeast to produce CO₂ and alcohol.</p><p>Delirium Tremens is the first beer in Belgium brewed entirely with Pure Local malt that has a negative CO₂ balance. So, you can enjoy this beer knowing you are supporting nature.</p>',
       lat: 50.999559,
       lon: 3.804911 // Brouwerij Huyghe, Melle
     }
@@ -276,7 +288,7 @@ function readBoolAttr(el, attr, fallback) {
 
 // Mapbox / Google "Encoded Polyline Algorithm Format" decoder. Mapbox's
 // Directions API returns coordinates in this format when called with
-// `geometries=polyline` (precision 5). About 3× more compact than a raw
+// `geometries = polyline` (precision 5). About 3× more compact than a raw
 // coordinate array — important because we store geometry in a 10k-char
 // Webflow plain-text field.
 function decodePolyline(str, precision) {
@@ -430,6 +442,13 @@ function addJourneySegments(map, steps, opts) {
   for (let i = 0; i < known.length - 1; i++) {
     const from = known[i];
     const to = known[i + 1];
+
+    // Same coordinates → no line to draw (e.g. two steps at one location).
+    if (from.lat === to.lat && from.lon === to.lon && !from.lineToNext) {
+      segments.push({ sourceId: null, layerId: null, toOrder: to.order, fromOrder: from.order, empty: true });
+      continue;
+    }
+
     const fromPt = [from.lon, from.lat];
     const toPt = [to.lon, to.lat];
 
@@ -486,11 +505,19 @@ function addJourneySegments(map, steps, opts) {
 // `applyMapPadding`, and Mapbox honours that as the default for every
 // fitBounds / flyTo. Passing one here would override the persistent padding.
 function fitBoundsToCoords(map, mapboxgl, coords) {
-  if (coords.length < 2) return;
+  if (coords.length < 1) return;
   const bounds = coords.reduce(
     (b, c) => b.extend(c),
     new mapboxgl.LngLatBounds(coords[0], coords[0])
   );
+  // Guard against zero-area bounds (all points identical) — Mapbox would
+  // zoom to maxZoom and the GPU can choke. Pad by ~0.01° (~1 km).
+  const sw = bounds.getSouthWest();
+  const ne = bounds.getNorthEast();
+  if (sw.lng === ne.lng && sw.lat === ne.lat) {
+    bounds.extend([sw.lng - 0.01, sw.lat - 0.01]);
+    bounds.extend([ne.lng + 0.01, ne.lat + 0.01]);
+  }
   map.fitBounds(bounds, { duration: 0, linear: true });
 }
 
@@ -706,6 +733,7 @@ function applyContentSlot(el, slot, step) {
       if (step.order != null) {
         el.setAttribute('data-dialog-open', 'j' + step.order);
       }
+      el.style.display = step.learnMoreText ? '' : 'none';
       break;
 
     case 'link':
@@ -1087,20 +1115,18 @@ function flyToActiveStep(instance, order) {
   if (!step) return;
 
   const prev = steps.find((s) => s.order === order - 1);
+  const sameCoords = prev && prev.lat === step.lat && prev.lon === step.lon;
 
-  if (prev && isStepUnlocked(prev)) {
+  if (prev && isStepUnlocked(prev) && !sameCoords) {
     const bounds = new mapboxgl.LngLatBounds([prev.lon, prev.lat], [prev.lon, prev.lat])
       .extend([step.lon, step.lat]);
-    // No `padding` option here — `map.setPadding(...)` set during init
-    // (and on every resize) acts as the persistent default. Passing one
-    // here would override the auto-detected occluder padding.
     map.fitBounds(bounds, {
       duration: opts.flyDuration,
       essential: true
     });
   } else {
-    // First step (no previous leg) — zoom in to the location so the user
-    // sees a clear focus on the origin before any line starts drawing.
+    // First step or same location as previous step — zoom in to the
+    // location at the "origin" zoom level (same feel as step 1).
     map.flyTo({
       center: [step.lon, step.lat],
       zoom: 10,

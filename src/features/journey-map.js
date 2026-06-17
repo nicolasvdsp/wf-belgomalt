@@ -98,16 +98,30 @@
 //     <p   data-journey-content="story"></p>        below.
 //     <img data-journey-content="image">
 //     <div data-journey-content="name"></div>
-//     <a   data-journey-content="link"></a>
+//     <div data-journey-content="address"></div>
+//     <a   data-dialog-open data-journey-content="dialog-trigger">Learn more</a>
 //
 //   </section>
 //
+//   <!-- Dialog template (sibling of the card, inside .section_geography) -->
+//   <div data-dialog data-journey-dialog-template>
+//     <aside data-dialog-panel>
+//       <div data-journey-content="learn-more"></div>  (rich-text slot)
+//       <div data-journey-content="address"></div>
+//       …
+//     </aside>
+//   </div>
+//   <!-- JS clones this template once per step, assigning data-dialog="j1" etc.
+//        The template is hidden after cloning. -->
+//
 //   Content slot values (data-journey-content="…"):
-//     title          textContent ← step.title
-//     story | quote  innerHTML   ← step.quote || step.story
-//     name  | author textContent ← step.author.name
-//     image | avatar src         ← step.author.avatar     (on <img>)
-//     link | learn-more href     ← step.learnMoreUrl      (on <a>)
+//     title            textContent ← step.title
+//     story | quote    innerHTML   ← step.quote || step.story
+//     name  | author   textContent ← step.author.name
+//     image | avatar   src         ← step.author.avatar     (on <img>)
+//     address          innerHTML   ← step.address
+//     dialog-trigger   sets data-dialog-open="j{order}" on the Learn more button
+//     link|learn-more  innerHTML   ← step.learnMoreText   (rich text for dialog)
 //
 // ────────────────────────────────────────────────────────────────────────────
 // STATE ON THE WRAPPER (read by CSS, written by JS):
@@ -170,7 +184,7 @@ const DEFAULTS = {
 // Fixture rendered when no `data-journey-data` is provided and no unlock
 // overlay is present. All steps are fully populated for demo purposes.
 // FIXTURE_DATE is the MM/YY that unlocks the fixture in demo mode (no slug).
-const FIXTURE_DATE = '06/27';
+const FIXTURE_DATE = '05/29';
 const FIXTURE_FALLBACK = {
   v: 1,
   steps: [
@@ -180,7 +194,9 @@ const FIXTURE_FALLBACK = {
       story: '<p>Our barley is grown on small Walloon farms practicing no-till agriculture. Healthier soils, better grain.</p>',
       quote: 'I have been practicing no-till farming for 20 years. I am convinced that living soil allows for healthier cultivation.',
       author: { name: 'Étienne Allard', avatar: '' },
-      learnMoreUrl: '#',
+      date: 'Febr 01, 2026',
+      address: 'Ferme des Warelles<br>Zwarte Vogelstraat 15, 7850 Edingen',
+      learnMoreText: '<p>Etienne Allard is one of our more than 100 Belgian farmers who is growing brewing barley for the Pure Local programme. He applies progressive farming practices that restore soil health, support biodiversity, and store atmospheric CO₂ in the soil. Etienne is very proud that his grains are used to brew some of the most prestigious Belgian beers. Cheers to Etienne—and cheers to our Belgian brewing culture!</p>',
       lat: 50.2929,
       lon: 5.0944, // Ciney
       // Ciney → Cultivae (50.5 km driving)
@@ -192,7 +208,9 @@ const FIXTURE_FALLBACK = {
       story: '<p>The harvest is pooled at a local cooperative that coordinates between farmers and the malting house.</p>',
       quote: 'We bridge the gap between field and factory.',
       author: { name: 'Cultivae', avatar: '' },
-      learnMoreUrl: '#',
+      date: 'Febr 18, 2026',
+      address: 'Cultivae<br>Rue du Buisson 19, 1360 Perwez',
+      learnMoreText: '<p>Cultivae is the cooperative behind more than 100 Pure Local barley farmers. They receive the grains once they are harvested, store them for a few months, then clean and deliver them to the malthouse to be transformed into malt.</p><p>Cultivae is not just a typical cooperative—they stand out through their strong support for the transition from conventional to regenerative farming. They actively advise farmers on how to support nature through their farming practices.</p>',
       lat: 50.644026,
       lon: 4.797971, // Cultivae
       // Cultivae → Boortmalt Herent (42.3 km driving)
@@ -204,7 +222,9 @@ const FIXTURE_FALLBACK = {
       story: '<p>The grain is transformed into malt at one of the oldest malteries in the country.</p>',
       quote: 'Malting is the alchemy that wakes the grain up.',
       author: { name: 'Boortmalt', avatar: '' },
-      learnMoreUrl: '#',
+      date: 'March 31, 2026',
+      address: 'Belgomalt<br>Zijpstraat 155, 3020 Herent',
+      learnMoreText: '<p>Belgomalt–Boortmalt receives the barley from Cultivae and transforms it into malt. This process takes approximately seven days. In the malthouse, they make the barley kernel ‘believe’ it is in the ground and needs to sprout (germinate). First, the barley is soaked in water, then it is transferred to the germination room, where it can grow. The process is then paused by drying the barley in the final phase.</p><p>During germination, a wide range of natural enzymes is released within the barley kernel. These enzymes play a crucial role in the brewery, where they convert complex starches in the barley into simple sugars in the wort—ideal food for the yeast.</p>',
       lat: 50.928777,
       lon: 4.680181, // Boortmalt Herent
       // Boortmalt Herent → Brouwerij Huyghe (79.2 km driving)
@@ -216,7 +236,9 @@ const FIXTURE_FALLBACK = {
       story: '<p>From malt to mash to fermentation, every batch is brewed with care at a family-owned brewery.</p>',
       quote: 'A beer should taste of the land it comes from.',
       author: { name: 'Brouwerij Huyghe', avatar: '' },
-      learnMoreUrl: '#',
+      date: 'April 06, 2026',
+      address: 'Delirium Huyghe<br>Geraardsbergse steenweg 14b, 9090 Melle',
+      learnMoreText: '<p>Delirium Tremens is a beer brewed with 100% malt, with no other sources of sugar added. Malt is one of the main raw ingredients used in brewing. It gives beer its colour and round character, and provides the sugars needed for yeast to produce CO₂ and alcohol.</p><p>Delirium Tremens is the first beer in Belgium brewed entirely with Pure Local malt that has a negative CO₂ balance. So, you can enjoy this beer knowing you are supporting nature.</p>',
       lat: 50.999559,
       lon: 3.804911 // Brouwerij Huyghe, Melle
     }
@@ -654,27 +676,102 @@ function applyContentSlot(el, slot, step) {
     case 'avatar': {
       if (el.tagName !== 'IMG') break;
       const url = (step.author && step.author.avatar) || '';
+      const eyebrow = el.closest('.eyebrow') || el.parentElement;
+      const fallbackEl = eyebrow.querySelector('.eyebrow_image-fallback > :first-child');
       if (url) {
         el.setAttribute('src', url);
         el.style.display = '';
-      } else if (el.getAttribute('src')) {
+        if (fallbackEl) fallbackEl.parentElement.style.display = 'none';
+      } else {
+        el.style.display = 'none';
         el.removeAttribute('src');
+        if (fallbackEl) {
+          const name = (step.author && step.author.name) || '';
+          fallbackEl.textContent = name.charAt(0).toUpperCase();
+          fallbackEl.parentElement.style.display = '';
+        }
       }
       break;
     }
 
+    case 'address':
+      el.innerHTML = step.address || '';
+      break;
+
+    case 'date':
+      el.textContent = step.date || '';
+      break;
+
+    case 'dialog-trigger':
+      if (step.order != null) {
+        el.setAttribute('data-dialog-open', 'j' + step.order);
+      }
+      break;
+
     case 'link':
     case 'learn-more':
     case 'learnmore':
-      if (el.tagName === 'A') {
-        el.setAttribute('href', step.learnMoreUrl || '#');
-      }
+      el.innerHTML = step.learnMoreText || '';
       break;
 
     default:
       // Unknown slot — silently ignore.
       break;
   }
+}
+
+
+// --------------------------------------------
+// Dialog cloning
+// --------------------------------------------
+// The designer places a single `div[data-dialog][data-journey-dialog-template]`
+// inside `.section_geography` (sibling of the container that holds the card).
+// On init we clone it once per step, set `data-dialog="j{order}"`, inject step
+// content into any `[data-journey-content]` slots inside the clone, then hide
+// the template. The dialog module (`dialog.js`) picks up the clones via its
+// existing event-delegation — no re-init needed.
+function dialogId(order) {
+  return 'j' + order;
+}
+
+function buildDialogs(wrapper, steps) {
+  const section = wrapper.closest('.section_geography') || wrapper.parentElement;
+  if (!section) return [];
+
+  const template = section.querySelector('[data-dialog][data-journey-dialog-template]')
+    || section.querySelector('[data-dialog]');
+  if (!template) return [];
+
+  const clones = [];
+
+  steps.forEach((step) => {
+    const clone = template.cloneNode(true);
+    clone.removeAttribute('data-journey-dialog-template');
+    clone.setAttribute('data-dialog', dialogId(step.order));
+    clone.setAttribute('data-dialog-status', 'closed');
+
+    clone.querySelectorAll('[data-journey-content]').forEach((el) => {
+      const slot = (el.getAttribute('data-journey-content') || '').trim().toLowerCase();
+      applyContentSlot(el, slot, step);
+    });
+
+    template.parentElement.insertBefore(clone, template);
+    clones.push(clone);
+  });
+
+  template.style.display = 'none';
+  template.setAttribute('aria-hidden', 'true');
+
+  if (typeof window !== 'undefined' && window.dialog && window.dialog._prep) {
+    window.dialog._prep(section);
+  }
+
+  return clones;
+}
+
+function destroyDialogs(clones) {
+  if (!clones) return;
+  clones.forEach((el) => el.remove());
 }
 
 // Tiny helper for non-card slots (footer locked count, etc.).
@@ -1169,6 +1266,7 @@ function initInstance(wrapper) {
     segmentClickHandlers: [],
     pauseClickHandlers: [],
     navClickHandlers: [],
+    dialogClones: [],
     ro: null,
     destroy: null
   };
@@ -1181,10 +1279,11 @@ function initInstance(wrapper) {
   map.on('load', () => {
     if (!document.contains(wrapper)) return;
 
-    // Lines, pins, progress bar, footer.
+    // Lines, pins, progress bar, footer, per-step dialogs.
     instance.lineSegments = addJourneySegments(map, steps, opts);
     instance.pins = addPins(map, mapboxgl, steps);
     instance.progressSegments = buildProgressBar(wrapper, steps);
+    instance.dialogClones = buildDialogs(wrapper, steps);
     updateLockedCount(wrapper);
 
     // Initialise every step's progress to 0 so the data structure exists
@@ -1260,6 +1359,23 @@ function initInstance(wrapper) {
       instance.navClickHandlers.push({ element: btn, handler });
     });
 
+    // Pause the journey while a dialog is open so the progress bar and
+    // line animation freeze. Resume when the dialog closes (unless the
+    // user had already manually paused before opening).
+    const dialogOpenHandler = () => {
+      instance._pausedBeforeDialog = instance.paused;
+      if (!instance.paused) pauseStory(instance);
+    };
+    const dialogCloseHandler = () => {
+      if (!instance._pausedBeforeDialog) resumeStory(instance);
+    };
+    document.addEventListener('dialog:open', dialogOpenHandler);
+    document.addEventListener('dialog:close', dialogCloseHandler);
+    instance.pauseClickHandlers.push(
+      { element: document, event: 'dialog:open', handler: dialogOpenHandler },
+      { element: document, event: 'dialog:close', handler: dialogCloseHandler }
+    );
+
     // Defer auto-play until the component is visible. The observer pauses
     // playback when scrolled out and resumes when scrolled back in.
     instance.io = new IntersectionObserver(
@@ -1301,12 +1417,14 @@ function initInstance(wrapper) {
     instance.segmentClickHandlers.forEach(({ element, handler }) => {
       element.removeEventListener('click', handler);
     });
-    instance.pauseClickHandlers.forEach(({ element, handler }) => {
-      element.removeEventListener('click', handler);
+    instance.pauseClickHandlers.forEach(({ element, event, handler }) => {
+      element.removeEventListener(event || 'click', handler);
     });
     instance.navClickHandlers.forEach(({ element, handler }) => {
       element.removeEventListener('click', handler);
     });
+    destroyDialogs(instance.dialogClones);
+    instance.dialogClones = [];
   };
 }
 

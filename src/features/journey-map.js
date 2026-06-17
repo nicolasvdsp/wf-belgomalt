@@ -1658,12 +1658,12 @@ function initOverlay(wrapper, overlay) {
     triggers.forEach((btn) => {
       addHandler(btn, 'click', (e) => {
         e.preventDefault();
-        proxy.focus();
+        proxy.focus({ preventScroll: true });
         showUnlockStep(overlay, 2);
         const digs = getDigitInputs(overlay);
         if (digs[0]) {
           requestAnimationFrame(() => {
-            digs[0].focus();
+            digs[0].focus({ preventScroll: true });
             proxy.remove();
           });
         }
@@ -1683,7 +1683,7 @@ function initOverlay(wrapper, overlay) {
     addHandler(input, 'input', () => {
       input.value = input.value.replace(/\D/g, '').slice(0, 1);
       if (input.value.length === 1 && idx < digits.length - 1) {
-        digits[idx + 1].focus();
+        digits[idx + 1].focus({ preventScroll: true });
       }
       // Auto-submit when the last digit is filled.
       if (idx === digits.length - 1 && input.value.length === 1) {
@@ -1695,7 +1695,7 @@ function initOverlay(wrapper, overlay) {
       if (e.key === 'Backspace' && input.value === '' && idx > 0) {
         e.preventDefault();
         digits[idx - 1].value = '';
-        digits[idx - 1].focus();
+        digits[idx - 1].focus({ preventScroll: true });
       }
       if (e.key === 'Enter') {
         e.preventDefault();
@@ -1712,7 +1712,7 @@ function initOverlay(wrapper, overlay) {
         digits[i].value = nums[i];
       }
       const focusIdx = Math.min(nums.length, digits.length - 1);
-      digits[focusIdx].focus();
+      digits[focusIdx].focus({ preventScroll: true });
       if (nums.length >= 4) submitDate(wrapper, overlay);
     });
   });

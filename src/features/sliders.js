@@ -86,9 +86,9 @@ function initBasicGSAPSlider(container) {
       track.removeAttribute('data-gsap-slider-list-status');
     };
 
-    //Ccalculate bounds and snap points
+    // Calculate bounds and snap points
     const vw = collection.clientWidth;
-    const tw = track.scrollWidth;
+    const tw = slideW * items.length - marginRight;
     const maxScroll = Math.max(tw - vw, 0);
     const minX = -maxScroll;
     const maxX = 0;

@@ -190,7 +190,7 @@ const FIXTURE_FALLBACK = {
   steps: [
     {
       order: 1,
-      title: 'Barley grown on Belgian regenerative farms committed to healthier soils.',
+      title: 'The place where the grains in this beer grew!',
       story: '',
       quote: '',
       author: { name: 'Étienne Allard', avatar: '' },
@@ -231,20 +231,20 @@ const FIXTURE_FALLBACK = {
     },
     {
       order: 4,
-      title: 'When the barley is transformed into malt.',
+      title: 'Where the barley is transformed into malt.',
       story: '',
       quote: '',
       author: { name: 'Boortmalt', avatar: '' },
       date: 'March 31, 2026',
-      address: 'Belgomalt<br>Zijpstraat 155, 3020 Herent',
-      learnMoreText: '',
+      address: 'Zijpstraat 155, 3020 Herent',
+      learnMoreText: '<h1>Belgomalt–Boortmalt transforms barley into malt in a process of around seven days.</h1><p>By controlling moisture and temperature, we trigger germination—making the barley kernel believe it is ready to grow. The process is then stopped by carefully drying the grain.</p><p>During germination, natural enzymes are activated, enabling brewers to convert starch into fermentable sugars—the perfect food for yeast.</p>',
       lat: 50.928777,
       lon: 4.680181, // Boortmalt Herent
       lineToNext: 'gczuHw}p[Rl@?LSf@M^G^XdBBRBNZnBLp@R^TLLBx@DrZ|ANBFu@?ABO??XgDH[DQLQZ]JQDUJ}AB[Bc@DSDWv@kCPk@DOHODM@C@W@MP@\\DXBN@fBU|@MlAOHANCl@KnBUNEXMXQLKLMHKBCVYdAsAl@q@xAcB`BmBZa@t@u@^c@V[TW`@q@^_A@CFY?A@KFADEBGDD@?VZJN`@h@|EhG|BdDx@rAjBbDz@jBf@nAJ`@Lh@BFn@lDPn@zA`EZt@NLNJvBZ|ARjC\\j@F??VD`@Fd@[HIl@s@VWPOVU\\WTOPKXQb@U`@Q`AY\\I^IZE^Ef@CfISjAEnACx@CnAA|DM`CGXC^EbAOPETGl@Ur@WHAXGRIROBCd@e@JINQn@w@DGDITYd@m@DKh@{@Nc@b@u@DKT_@HQBENWNYJGbEkHBGJSv@_BN]r@uAhAqBdCqETc@LCb@u@d@w@V[LMPUJIHKLMVURAF@B@HBJD`GxNL^p@hBV\\vAjFdBlGrAlEj@dBv@tBj@vAv@`Bv@zApAvBzAvBlAxAxCtC|CbCzIhGzAbAjE|CdBpAdBrAzBpB|@v@nArAj@l@`AnAfBdCrAtBhAxBr@zAdAlCt@`Ch@fBl@bCrAvFh@zBnAvFx@`Dh@bBl@jBz@xBf@nA~@jBdAjBlA`BlAzAp@t@tAlA~AnAzA|@pAn@v@ZpBn@`Bb@dBb@JBfDx@|Aj@v@Zj@VtBlA\\Rt@n@xBnBzDfEzDnEpBdCzCjDfGdHpCbDvAlBx@dAl@x@X`@Nb@V`@PVNXRZR\\NZNVBDR^NZVl@Xn@Zz@L^L\\DPVx@HZDNDLJ`@VlARx@Z~AX~AZbBZbBJl@Hl@Lp@Hl@Ht@DZDd@BRFx@Bf@Dv@@l@@bA@jA?\\?f@Az@Cx@GtAGvAI|AE|@G|@MxBWrDMbCWvEI~AEt@OnB?N?j@}Dbk@KvAoCb`@o@~Iw@`Lk@dIcBrUiBxT{WntCcBjRy@|Jm@pHs@`Jm@rIk@xIc@~H[tFg@tKG|A[rHO`FSdGWbKQ~HOlJWnZEhNEvRAfF?rUEhpBAzY?zX?xK?jUApW?~q@A~S?rK?xI@tYHfUDdCB~B?DS|CIdBOnBw@nH_AvHKz@WvBo@xE[~AS~@WjAUt@]z@]t@]n@i@t@k@t@IHc@f@_@ZCFYb@IF}ExCcF|C_Aj@qDtBk@`@aAp@uFjDA@SLg@ZCBGDUJoC`BOHg@^oCfBmB`As@\\aAXgATyARkAHcCDuEPsCj@}BhA_CbByDrDmEdEaBbBqCfCYVsBdB_@ZuFzEuBjBoAp@kBlAm@h@aA~@yAtAcAlAy@pAeAvBq@rB{@dDk@fCgAlEw@`De@nBYhAKZkChIgI`VoBtF}AbE{@zBw@jBo@zA{@fB_AlBiAvBaAbBaAxAaAvAmA|AoBxBiB`BkA~@KFiAt@MFeAj@sB~@E@aBp@uAd@aDlAiAb@wBbAgAv@g@d@iA`Aq@r@{@hAw@hAo@fA[j@iAdCcAlCy@bCm@nBy@pCABe@|AsAzE]tA]rAe@~B[fBWhBMhAOjBOxBInCEjC?bBBtAHbCF|A@H@J??@TFj@JnALlAb@`DjD`VF`@X|BD\\DRJ~@b@lD\\fDTtCPlCP~CN`DFdBFrBDlDBxD?jD?d@CdDEhBE|AA`@MdDGbBI~AOvBOtB_@tE[rCu@~GoA|I}CxS_EhXiBzLKt@cA`HqAlJu@`Gk@dF_@jDs@hHUdCWfDWfDQxCMrBKtBQ~EGdBEfBIhDCpAArAApE?zA@fDDzBBjBBvAF`BDxAN~CNzCPjCJvAZjDVfCj@xEh@xD^~Bb@fCv@|Dt@nD`A`EdAtDn@xBp@rBr@rB`BjEdAfC|BzEnAbC|@bBpA~BnAxBdKfQ`A~A|F|JV`@BDhGjKfIlNbBpCxBdD~BfDrDxEtBdCrHtI`AlAlBdCjAdBjAjBx@|Ah@bAvAvCz@nB~@bCx@~B`AxCh@jBf@hBd@vBZrAZzAf@fCn@rDZhBtInh@lHnc@pA`Il@hDl@zCh@zBf@nBn@tBl@hBhBnEtBpD|BpDnBtCLPL\\t@hAt@hAx@xAfB~C@@FLBDJN@@HL@@FJ@B@B~CvE@BrBxC|@pApAjBTZrDhFRZn@`ATX`AxAx@pAx@tApAdCh@fAzBrErAlCb@z@LVlBtDjAdCZn@b@bAb@dA\\z@h@vANd@Nh@Tx@VrAJt@Df@HjA@p@?v@CtAGpAMfAOpA}@nGQlAq@~EKr@QxA]jD_@~Cq@bGc@~DSvBk@pFaCtT]~Cs@`H_@vDs@rIObCS~C}AtYCVg@tJ{H`zAgBx\\e@fKWjJIdI?rHFlJT~If@fLr@bLdDxe@nF|v@XnEb@nH`@rH`@rKNfKFnJAbJKnIQrIa@nKm@nK{@zLiBxWaBhVe@fGKzAe@lHyEnr@cBlV{@lLeA~KmAbKwAlJiGp_@mQfgAcCbOaD~Re@pCoAvHi@vCoDtQyDpPoDnOeBfH]vAqyAllGqAvFy@|D}AvIg@|CKr@a@pCeAhIa@dEQlBoHbz@]dEqA`NsAbLEZ}ApJyAtHKh@iA|EiApEy@`DaCtH_BpEqAhD{ApDyA`DcDpGkM|U}A~CsApCqAtCm@xAe@fAeBtE{@dCc@rAk@bByAfFeBrG}@vDu@jDy@lEw@pEu@tEu@~EaA|Im@nGc@zFG|@WpE[vGSrGMxGEpG?fIDdGJdHZlJb@fIX~DNpBn@lH@JJ`A@Jd@pEb@xDn@vFv@bGBLZpCJbAd@pEj@jGr@vJR`DPfDRpENpEHzF@~ADjF?bFG|GMfGSfGYbGg@nHs@~IMzAuAzNWjCKnAg@jFqDd`@U`C}ApPiBtRSpBw@jH}@`HcAlGgAlGoA`GsAtFiAbEaC`IaeAlkDUt@}c@bzAMb@gw@jiCyMlc@Ut@yOnh@gDzK{E|OgE|MUp@qBhGcAzCmHjSgIhTcDdIwBtFc@N[l@q@p@qBzAiAx@g@^cD`CMDM@MAKAQIWSUSU]QWKOQU[a@w@gAcByBSWs@cAQIOSIMGIm@w@c@o@GIiEaGgDuEaDoE}BaD}B_DOYqAkBg@s@e@q@w@gAW_@_AyAQYWl@Un@a@bAGNUj@IRc@jAMZuApDa@`Ak@zAo@`Bi@pA}AfEiAlCOd@CDo@dBeBnEs@lBgAlCELi@vA}@|Be@lASn@Uj@MZi@tAs@fBIRcAhC}@`Cy@rBIRWn@gAnC]v@Qf@Yz@GPABSj@Sx@k@fCGZU`AERMj@wDpPaAfEyAtGmBhIo@vCwK|e@I\\CLkAfFMh@MR]hASj@CXCHKHWr@Sj@MZMXEPCHK^CTqBpEWl@CH_@t@k@lAk@rAEJEFaA~BSd@KTUd@Yl@JFFDVX`@b@PJ\\D`@D`@BZHZL'
     },
     {
       order: 5,
-      title: 'Brewed with craft and tradition.',
+      title: 'Where this beer was brewed.',
       story: '',
       quote: '',
       author: { name: 'Brouwerij Huyghe', avatar: '' },

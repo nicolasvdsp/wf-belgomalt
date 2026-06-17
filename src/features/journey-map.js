@@ -1638,18 +1638,47 @@ function initOverlay(wrapper, overlay) {
       ? Array.from(explicitStart)
       : Array.from(step1.querySelectorAll('a.ui-button, button.ui-button, [role="button"]'));
 
+    // iOS Safari only opens the keyboard for a .focus() that happens
+    // synchronously inside a user-gesture handler AND on an element that
+    // is currently visible. Step 2 is display:none at this point, so we
+    // use a tiny off-screen proxy input: focus it synchronously (keyboard
+    // opens), swap screens, then move focus to the real digit input.
+    const proxy = document.createElement('input');
+    proxy.setAttribute('inputmode', 'numeric');
+    proxy.setAttribute('pattern', '[0-9]*');
+    proxy.setAttribute('aria-hidden', 'true');
+    proxy.setAttribute('tabindex', '-1');
+    Object.assign(proxy.style, {
+      position: 'fixed', left: '-9999px', top: '0',
+      width: '1px', height: '1px', opacity: '0',
+      border: 'none', padding: '0', margin: '0'
+    });
+    overlay.appendChild(proxy);
+
     triggers.forEach((btn) => {
       addHandler(btn, 'click', (e) => {
         e.preventDefault();
+        proxy.focus();
         showUnlockStep(overlay, 2);
-        const digits = getDigitInputs(overlay);
-        if (digits[0]) requestAnimationFrame(() => digits[0].focus());
+        const digs = getDigitInputs(overlay);
+        if (digs[0]) {
+          requestAnimationFrame(() => {
+            digs[0].focus();
+            proxy.remove();
+          });
+        }
       });
     });
   }
 
   // 4-digit date inputs: numeric filter, auto-advance, backspace retreat.
+  // Force inputmode + pattern so mobile browsers always show the numpad,
+  // regardless of what the Webflow designer set as the input type.
   const digits = getDigitInputs(overlay);
+  digits.forEach((inp) => {
+    inp.setAttribute('inputmode', 'numeric');
+    inp.setAttribute('pattern', '[0-9]*');
+  });
   digits.forEach((input, idx) => {
     addHandler(input, 'input', () => {
       input.value = input.value.replace(/\D/g, '').slice(0, 1);

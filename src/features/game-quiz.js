@@ -1,4 +1,4 @@
-const QUESTIONS = [
+const FALLBACK_QUESTIONS = [
   {
     question: "How far does barley usually travel before becoming beer?",
     answers: ["200 - 500 km", "<50 km", "500 - 1000 km", "> 1000 km"],
@@ -36,6 +36,53 @@ const QUESTIONS = [
   },
 ];
 
+// --- CMS source parsing ---
+// Reads a Webflow CMS collection list where each item has:
+//   [data-quiz-source="question"]       → question text
+//   [data-quiz-source="answer-1"]       → first answer
+//   [data-quiz-source="answer-2"]       → second answer
+//   [data-quiz-source="answer-3"]       → third answer
+//   [data-quiz-source="answer-4"]       → fourth answer
+//   [data-quiz-source="explication"]    → explanation text
+//   [data-quiz-correct-answer]          → "1", "2", "3", or "4"
+function parseQuestionsFromCMS(container) {
+  const sourceList = container.querySelector("[data-quiz-source-list]");
+  if (!sourceList) return null;
+
+  const items = Array.from(sourceList.children);
+  if (!items.length) return null;
+
+  const questions = items.map((item) => {
+    const getText = (key) => {
+      const el = item.querySelector(`[data-quiz-source="${key}"]`);
+      return el ? el.textContent.trim() : "";
+    };
+
+    const correctRaw = item.getAttribute("data-quiz-correct-answer") ||
+      (item.querySelector("[data-quiz-correct-answer]")?.getAttribute("data-quiz-correct-answer")) || "1";
+    const correctIndex = Math.max(0, Math.min(3, parseInt(correctRaw, 10) - 1));
+
+    const answers = [
+      getText("answer-1"),
+      getText("answer-2"),
+      getText("answer-3"),
+      getText("answer-4"),
+    ].filter((a) => a);
+
+    return {
+      question: getText("question"),
+      answers,
+      correctIndex,
+      explication: getText("explanation") || getText("explication"),
+    };
+  }).filter((q) => q.question && q.answers.length >= 2);
+
+  // Hide the source list — it's only used as data
+  sourceList.style.display = "none";
+
+  return questions.length ? questions : null;
+}
+
 function initGameQuiz(container) {
   container = container || document;
   const game = container.querySelector(".game-component");
@@ -43,8 +90,8 @@ function initGameQuiz(container) {
   if (game.dataset.gameInitialized) return;
   game.dataset.gameInitialized = "true";
 
-  const questionEl = game.querySelector("[data-game-question]");
-  const explicationEl = game.querySelector("[data-game-explication]");
+  const questionEl = game.querySelector('[data-quiz-target="question"]') || game.querySelector("[data-game-question]");
+  const explicationEl = game.querySelector('[data-quiz-target="explanation"]') || game.querySelector("[data-game-explication]");
   const currentEl = game.querySelector('[data-game-question-number="current"]');
   const maxEl = game.querySelector('[data-game-question-number="max"]');
   const livesEl = game.querySelector("[data-counter-lifes]");
@@ -54,6 +101,7 @@ function initGameQuiz(container) {
   if (!questionEl || !allButtons.length) return;
 
   const answerButtons = allButtons;
+  const QUESTIONS = parseQuestionsFromCMS(game) || FALLBACK_QUESTIONS;
 
   let currentIndex = 0;
   let lives = livesEl ? parseInt(livesEl.textContent, 10) || 3 : 3;

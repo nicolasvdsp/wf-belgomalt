@@ -44,7 +44,7 @@ function initPaginationPill(container) {
 // value, so it coexists safely with the preloader and quiz animations that
 // also write to the same element.
 
-const counterState = { cleanup: null };
+const counterState = { cleanup: null, scrollPointsAwarded: 0 };
 
 const SCROLL_TOTAL_POINTS = 400;
 const DEFAULT_BUTTON_POINTS = 20;
@@ -144,17 +144,21 @@ function initCounterAccumulation(container) {
     : [];
   const sectionCount = sections.length;
   const pointsPerSection = sectionCount > 0 ? Math.round(SCROLL_TOTAL_POINTS / sectionCount) : 0;
+  const remaining = SCROLL_TOTAL_POINTS - counterState.scrollPointsAwarded;
   const reached = new Set();
   let observer = null;
 
-  if (sectionCount > 0) {
+  if (sectionCount > 0 && remaining > 0) {
     observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           if (!entry.isIntersecting) return;
           if (reached.has(entry.target)) return;
           reached.add(entry.target);
-          addToCounter(pointsPerSection);
+          const award = Math.min(pointsPerSection, SCROLL_TOTAL_POINTS - counterState.scrollPointsAwarded);
+          if (award <= 0) return;
+          counterState.scrollPointsAwarded += award;
+          addToCounter(award);
         });
       },
       { threshold: 0.15 }
@@ -166,7 +170,7 @@ function initCounterAccumulation(container) {
   const buttons = container.querySelectorAll('[data-counter-add]');
   buttons.forEach((btn) => btn.addEventListener('click', onButtonClick));
 
-  // --- Mirror counter (data-counter-total) ---
+  // --- Mirror counter (data-counter-total) – one-shot sync on visibility ---
   const totals = Array.from(container.querySelectorAll('[data-counter-total]'));
   let totalObserver = null;
 
@@ -184,9 +188,47 @@ function initCounterAccumulation(container) {
     totals.forEach((el) => totalObserver.observe(el));
   }
 
+  // --- Live sync (data-counter-sync) – mirrors coin counter while visible ---
+  const syncEls = Array.from(container.querySelectorAll('[data-counter-sync]'));
+  const visibleSyncEls = new Set();
+  let syncObserver = null;
+  let mutationObserver = null;
+
+  if (syncEls.length) {
+    const pushValue = () => {
+      const sourceEl = getCounterValueEl();
+      if (!sourceEl) return;
+      const val = sourceEl.textContent;
+      visibleSyncEls.forEach((el) => { el.textContent = val; });
+    };
+
+    syncObserver = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            visibleSyncEls.add(entry.target);
+            pushValue();
+          } else {
+            visibleSyncEls.delete(entry.target);
+          }
+        });
+      },
+      { threshold: 0 }
+    );
+    syncEls.forEach((el) => syncObserver.observe(el));
+
+    const sourceEl = getCounterValueEl();
+    if (sourceEl) {
+      mutationObserver = new MutationObserver(pushValue);
+      mutationObserver.observe(sourceEl, { childList: true, characterData: true, subtree: true });
+    }
+  }
+
   counterState.cleanup = () => {
     if (observer) observer.disconnect();
     if (totalObserver) totalObserver.disconnect();
+    if (syncObserver) syncObserver.disconnect();
+    if (mutationObserver) mutationObserver.disconnect();
     buttons.forEach((btn) => btn.removeEventListener('click', onButtonClick));
     counterState.cleanup = null;
   };

@@ -7,6 +7,11 @@
  * Idempotency: items are looked up by a custom `origino-id` text field on the
  * collection. Without that field the sync would create duplicates on every
  * webhook, so the helper throws if it encounters items missing the anchor.
+ *
+ * Create/update strategy: tries `createItemLive`/`updateItemLive` first for
+ * instant publishing. Falls back to staged `createItem`/`updateItem` if the
+ * live endpoint 404s (happens on collections that have never been part of a
+ * site publish). Staged items become live on next site publish.
  */
 
 const { WebflowClient } = require('webflow-api');
@@ -42,44 +47,56 @@ async function findItemByOriginoId(client, { collectionId, originoId }) {
 }
 
 /**
- * Create a new published item in the collection. The `fieldData` must already
- * include the `origino-id` field so future syncs can find it.
+ * Create a new item in the collection. Tries live-publish first; falls back
+ * to staged create if the live endpoint fails (e.g. collection never published).
  *
- * Note: the runtime SDK uses a wrapper override (`wrapper/ItemsClient.js`)
- * with a different signature than the auto-generated TypeScript types claim.
- * The wrapper expects a flat shape (`{ isArchived, isDraft, fieldData }`),
- * not the `{ body: { ... } }` shape shown in the .d.ts examples.
+ * Note: the runtime SDK wrapper expects a flat shape
+ * (`{ isArchived, isDraft, fieldData }`), not the `{ body: { ... } }` shape
+ * shown in the .d.ts examples.
  */
 async function createItem(client, { collectionId, fieldData }) {
   if (!fieldData?.[ORIGINO_ID_FIELD]) {
     throw new Error(`createItem: fieldData is missing required '${ORIGINO_ID_FIELD}'`);
   }
 
-  return client.collections.items.createItemLive(collectionId, {
-    isArchived: false,
-    isDraft: false,
-    fieldData,
-  });
+  const itemData = { isArchived: false, isDraft: false, fieldData };
+
+  try {
+    return await client.collections.items.createItemLive(collectionId, itemData);
+  } catch (err) {
+    if (err?.statusCode === 404 || err?.status === 404) {
+      return await client.collections.items.createItem(collectionId, itemData);
+    }
+    throw err;
+  }
 }
 
 /**
- * Update an existing published item's fields. We pass `fieldData` as-is and
- * let Webflow merge it with what's already there.
+ * Update an existing item's fields. Tries live-publish first; falls back
+ * to staged update if the live endpoint fails.
  */
 async function updateItem(client, { collectionId, itemId, fieldData }) {
-  return client.collections.items.updateItemLive(collectionId, itemId, {
-    isArchived: false,
-    isDraft: false,
-    fieldData,
-  });
+  const itemData = { isArchived: false, isDraft: false, fieldData };
+
+  try {
+    return await client.collections.items.updateItemLive(collectionId, itemId, itemData);
+  } catch (err) {
+    if (err?.statusCode === 404 || err?.status === 404) {
+      return await client.collections.items.updateItem(collectionId, itemId, itemData);
+    }
+    throw err;
+  }
 }
 
 /**
  * Delete an item from both the staged and live versions of the collection.
- * Webflow deletes propagate immediately to the live site.
  */
 async function deleteItem(client, { collectionId, itemId }) {
-  await client.collections.items.deleteItemLive(collectionId, itemId);
+  try {
+    await client.collections.items.deleteItemLive(collectionId, itemId);
+  } catch {
+    // Live version may not exist if collection was never published
+  }
   await client.collections.items.deleteItem(collectionId, itemId);
 }
 

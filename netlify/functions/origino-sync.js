@@ -1,26 +1,21 @@
 /**
- * Origino -> Webflow CMS sync endpoint.
+ * Origino -> Webflow CMS sync — HTTP entrypoint (manual triggers).
  *
- * Accepts a JSON body of the form:
- *   { action: 'upsert' | 'delete', originoId: string, payload?: object }
+ * The scheduled counterpart lives in `origino-sync-cron.js`; both share
+ * the same runner logic in `netlify/lib/runner.js`. Splitting is
+ * required because Netlify's runtime discards the HTTP response of a
+ * scheduled function.
  *
- * Authenticated with a shared secret in the `x-sync-secret` header. The
- * endpoint is intentionally simple: it validates input, looks up the matching
- * Webflow item by `origino-id`, and dispatches to create/update/delete.
+ * Modes
+ *   POST + empty body                              → sync everything
+ *   POST + { originoId: "..." }                    → sync one lot only
+ *   POST + { action: "delete", originoId: "..." }  → remove one lot
  *
- * The Origino-specific shape lives entirely in `lib/mapper.js`; everything
- * else here is reusable once the real Origino webhook contract lands.
+ * Auth: shared secret in the `x-sync-secret` header.
  */
 
 const { loadConfig } = require('../lib/config');
-const {
-  createWebflowClient,
-  findItemByOriginoId,
-  createItem,
-  updateItem,
-  deleteItem,
-} = require('../lib/webflow-client');
-const { mapOriginoToWebflow } = require('../lib/mapper');
+const { runSync, runDelete } = require('../lib/runner');
 
 function jsonResponse(statusCode, body) {
   return {
@@ -40,15 +35,18 @@ function timingSafeEqual(a, b) {
   return mismatch === 0;
 }
 
-function logEvent(level, fields) {
-  const line = JSON.stringify({ level, ts: new Date().toISOString(), ...fields });
-  if (level === 'error') console.error(line);
-  else console.log(line);
+function parseBodySafe(body) {
+  if (!body) return null;
+  if (typeof body !== 'string') return body;
+  if (!body.trim()) return null;
+  try {
+    return JSON.parse(body);
+  } catch {
+    return null;
+  }
 }
 
 exports.handler = async (event) => {
-  const startedAt = Date.now();
-
   if (event.httpMethod !== 'POST') {
     return jsonResponse(405, { ok: false, error: 'method-not-allowed' });
   }
@@ -57,116 +55,32 @@ exports.handler = async (event) => {
   try {
     config = loadConfig();
   } catch (err) {
-    logEvent('error', { event: 'config_error', message: err.message });
-    return jsonResponse(500, { ok: false, error: 'server-misconfigured' });
+    return jsonResponse(500, { ok: false, error: 'server-misconfigured', message: err.message });
   }
 
-  const providedSecret = event.headers?.['x-sync-secret'] || event.headers?.['X-Sync-Secret'];
+  const providedSecret =
+    event.headers?.['x-sync-secret'] || event.headers?.['X-Sync-Secret'];
   if (!timingSafeEqual(providedSecret || '', config.syncSecret)) {
-    logEvent('warn', { event: 'auth_failed' });
     return jsonResponse(401, { ok: false, error: 'unauthorized' });
   }
 
-  let body;
-  try {
-    body = typeof event.body === 'string' ? JSON.parse(event.body) : event.body;
-  } catch (err) {
-    return jsonResponse(400, { ok: false, error: 'invalid-json' });
-  }
+  const body = parseBodySafe(event.body);
 
-  if (!body || typeof body !== 'object') {
-    return jsonResponse(400, { ok: false, error: 'missing-body' });
-  }
-
-  const { action, originoId, payload } = body;
-
-  if (!originoId || typeof originoId !== 'string') {
-    return jsonResponse(400, { ok: false, error: 'missing-originoId' });
-  }
-
-  if (action !== 'upsert' && action !== 'delete') {
-    return jsonResponse(400, { ok: false, error: 'invalid-action' });
-  }
-
-  const client = createWebflowClient({ apiToken: config.webflow.apiToken });
-  const collectionId = config.webflow.collectionId;
-
-  try {
-    const existing = await findItemByOriginoId(client, { collectionId, originoId });
-
-    if (action === 'delete') {
-      if (!existing) {
-        logEvent('info', { event: 'delete_noop', originoId, durationMs: Date.now() - startedAt });
-        return jsonResponse(200, { ok: true, action: 'delete-noop', originoId });
-      }
-
-      await deleteItem(client, { collectionId, itemId: existing.id });
-      logEvent('info', {
-        event: 'delete_ok',
-        originoId,
-        webflowItemId: existing.id,
-        durationMs: Date.now() - startedAt,
-      });
-      return jsonResponse(200, { ok: true, action: 'delete', originoId, webflowItemId: existing.id });
+  if (body?.action === 'delete') {
+    if (!body.originoId || typeof body.originoId !== 'string') {
+      return jsonResponse(400, { ok: false, error: 'missing-originoId' });
     }
-
-    const fieldData = mapOriginoToWebflow(payload, originoId);
-
-    if (existing) {
-      const updated = await updateItem(client, {
-        collectionId,
-        itemId: existing.id,
-        fieldData,
-      });
-      logEvent('info', {
-        event: 'update_ok',
-        originoId,
-        webflowItemId: existing.id,
-        durationMs: Date.now() - startedAt,
-      });
-      return jsonResponse(200, {
-        ok: true,
-        action: 'update',
-        originoId,
-        webflowItemId: updated?.id || existing.id,
-      });
-    }
-
-    const created = await createItem(client, { collectionId, fieldData });
-    logEvent('info', {
-      event: 'create_ok',
-      originoId,
-      webflowItemId: created?.id,
-      durationMs: Date.now() - startedAt,
-    });
-    return jsonResponse(200, {
-      ok: true,
-      action: 'create',
-      originoId,
-      webflowItemId: created?.id,
-    });
-  } catch (err) {
-    const status = err?.statusCode || err?.status;
-    logEvent('error', {
-      event: 'sync_error',
-      originoId,
-      action,
-      status,
-      message: err?.message,
-      body: err?.body,
-      durationMs: Date.now() - startedAt,
-    });
-
-    if (status >= 400 && status < 500) {
-      return jsonResponse(status, {
-        ok: false,
-        error: 'webflow-rejected',
-        status,
-        message: err?.message,
-        details: err?.body,
-      });
-    }
-
-    return jsonResponse(502, { ok: false, error: 'webflow-upstream-failure' });
+    const result = await runDelete({ mode: 'manual', config, originoId: body.originoId });
+    const status = result.ok ? 200 : (result.status >= 400 && result.status < 500 ? result.status : 502);
+    return jsonResponse(status, result);
   }
+
+  const result = await runSync({
+    mode: 'manual',
+    config,
+    originoIdFilter: body?.originoId || null,
+  });
+
+  const status = result.ok ? 200 : (result.error === 'origino-id-not-found' ? 404 : 502);
+  return jsonResponse(status, result);
 };

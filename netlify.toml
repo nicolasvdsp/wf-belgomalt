@@ -6,6 +6,13 @@
   directory = "netlify/functions"
   node_bundler = "esbuild"
 
+# Background pull from Origino every 6 hours. This is a scheduled-only
+# function; manual triggers go to `origino-sync` (which shares the same
+# runner in netlify/lib/runner.js). A scheduled function cannot also
+# respond to HTTP — Netlify's runtime discards its HTTP response body.
+[functions."origino-sync-cron"]
+  schedule = "0 */6 * * *"
+
 # Vite is loaded by Webflow as a <script src>, not by Netlify itself.
 # `framework = "#static"` tells `netlify dev` to skip framework autodetection
 # (which otherwise waits for Vite on port 5173 and times out).

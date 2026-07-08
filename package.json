@@ -8,7 +8,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "clean": "rimraf -rf dist",
-    "lint:fix": "eslint ./src --ext .js,.jsx --fix"
+    "lint:fix": "eslint ./src --ext .js,.jsx --fix",
+    "avatars:csv": "node scripts/avatars-to-csv.mjs"
   },
   "devDependencies": {
     "@rollup/plugin-terser": "^0.4.4",
@@ -17,6 +18,7 @@
     "eslint-plugin-import": "^2.25.4",
     "eslint-plugin-prettier": "^4.0.0",
     "eslint-plugin-sort-imports-es6-autofix": "^0.6.0",
+    "netlify-cli": "^26.2.0",
     "rimraf": "^3.0.2",
     "sass": "^1.77.8",
     "vite": "^5.4.0"
@@ -25,6 +27,7 @@
     "node": ">=18.0.0"
   },
   "dependencies": {
+    "@netlify/blobs": "^10.7.9",
     "webflow-api": "^3.3.4"
   }
 }

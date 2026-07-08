@@ -8,3 +8,4 @@ dist-ssr
 yarn-error.log
 .netlify
 deno.lock
+scripts/output/
